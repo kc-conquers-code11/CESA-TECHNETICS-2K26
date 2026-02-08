@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("AI returned invalid JSON");
     }
 
-    console.log("✅ Final Grade:", result);
+    console.log(" Final Grade:", result);
 
     const finalScore = Math.round(result.score || 0);
 
