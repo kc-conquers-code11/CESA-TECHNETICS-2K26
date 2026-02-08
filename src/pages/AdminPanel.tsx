@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import ReactFlow, { 
     Background, 
     Controls, 
-    ReactFlowProvider 
+    ReactFlowProvider,
+    Handle,
+    Position
 } from 'reactflow';
-import 'reactflow/dist/style.css'; //  Critical Import for Visual Canvas
+import 'reactflow/dist/style.css'; 
 
 import {
     Shield, RefreshCw, Play, Ban, Search,
     Plus, Trash2, AlertTriangle, LogOut,
-    Activity, Workflow, CheckCircle, CheckCircle2, Eye, X, FileJson, Cpu, Code, Trophy,
-    ListChecks, Clock, FastForward, Settings, Save, Maximize2
+    Activity, Workflow, CheckCircle, CheckCircle2, Eye, X, Code, Trophy,
+    ListChecks, Clock, FastForward, Settings, Save, Maximize2, BookOpen, Database,
+    Cpu, 
+    Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +27,47 @@ import { toast } from 'sonner';
 
 // --- CONFIGURATION ---
 const ADMIN_EMAILS = ["admin1@strangertech.in", "kc@strangertech.in", "admin@cesa.in"];
+
+// --- FLOWCHART NODE TYPES ---
+const StartNode = ({ data }: any) => (
+  <div className="w-[100px] h-[50px] rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center text-xs font-bold text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+    {data.label}
+    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-green-500" />
+  </div>
+);
+
+const EndNode = ({ data }: any) => (
+  <div className="w-[100px] h-[50px] rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-xs font-bold text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-red-500" />
+    {data.label}
+  </div>
+);
+
+const ProcessNode = ({ data }: any) => (
+  <div className="w-[120px] h-[60px] bg-blue-500/20 border-2 border-blue-500 rounded flex items-center justify-center text-xs font-bold text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-blue-500" />
+    {data.label}
+    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-blue-500" />
+  </div>
+);
+
+const DecisionNode = ({ data }: any) => (
+  <div className="w-[100px] h-[100px] relative flex items-center justify-center">
+    <div className="absolute inset-0 bg-yellow-500/20 border-2 border-yellow-500 rotate-45 rounded-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]"></div>
+    <div className="relative z-10 text-[10px] font-bold text-yellow-500 text-center px-2">{data.label}</div>
+    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-yellow-500 -mt-[50px]" />
+    <Handle type="source" position={Position.Right} id="yes" className="w-2 h-2 bg-green-500 -mr-[50px]" />
+    <Handle type="source" position={Position.Bottom} id="no" className="w-2 h-2 bg-red-500 -mb-[50px]" />
+  </div>
+);
+
+const nodeTypes = {
+    start: StartNode,
+    end: EndNode,
+    process: ProcessNode,
+    decision: DecisionNode,
+    default: ProcessNode 
+};
 
 // --- TYPES ---
 interface Participant {
@@ -41,7 +86,19 @@ interface InspectionData {
         edges: any;
         ai_score: number;
         ai_feedback: string;
-        created_at: string;
+        timestamp: string;
+    } | null;
+    mcq?: {
+        score: number;
+        answers: any;
+        timestamp: string;
+    } | null;
+    coding?: {
+        problem_1_code?: string;
+        problem_2_code?: string;
+        test_cases_passed?: number;
+        score?: number;
+        timestamp: string;
     } | null;
 }
 
@@ -60,17 +117,18 @@ interface LeaderboardEntry {
     updated_at: string;
 }
 
-// --- SUB-COMPONENT: VISUAL FLOWCHART VIEWER (READ ONLY) ---
+// --- VISUAL FLOWCHART VIEWER ---
 const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
     return (
         <div className="h-[400px] w-full border border-zinc-700 rounded-xl bg-zinc-900 overflow-hidden relative">
             <ReactFlowProvider>
                 <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
+                    nodes={nodes || []}
+                    edges={edges || []}
+                    nodeTypes={nodeTypes}
                     fitView
-                    nodesDraggable={false} // 🔒 Lock: Dragging disabled
-                    nodesConnectable={false} // 🔒 Lock: Connections disabled
+                    nodesDraggable={false} 
+                    nodesConnectable={false} 
                     elementsSelectable={true}
                     zoomOnScroll={true}
                     panOnDrag={true}
@@ -89,50 +147,131 @@ const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
 
 // --- INSPECTION MODAL ---
 function InspectionModal({ user, loading, data, onClose }: { user: Participant; loading: boolean; data: InspectionData | null; onClose: () => void }) {
+    const [viewTab, setViewTab] = useState<'mcq' | 'flowchart' | 'coding'>('flowchart');
+
     return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-zinc-950 border border-zinc-800 w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+            <div className="bg-zinc-950 border border-zinc-800 w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+                
+                {/* Header */}
                 <div className="p-6 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-2"><Activity className="w-5 h-5 text-blue-500" /> Inspection Mode</h2>
-                        <p className="text-zinc-400 text-sm mt-1 font-mono">{user.email} <span className="text-zinc-600">|</span> ID: {user.user_id}</p>
+                        <p className="text-zinc-400 text-sm mt-1 font-mono">{user.email} <span className="text-zinc-600">|</span> ID: {user.user_id.slice(0,8)}</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-zinc-800"><X className="w-6 h-6 text-zinc-400" /></Button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center h-full text-zinc-500"><RefreshCw className="w-10 h-10 animate-spin mb-4" /><p>Retrieving classified logs...</p></div>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold">Status</p><p className={cn("text-xl font-bold capitalize", user.status === 'frozen' ? 'text-orange-500' : 'text-green-500')}>{user.status}</p></div>
-                                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold">Tab Switches</p><p className="text-xl font-bold text-red-500">{user.tab_switches}</p></div>
-                                <div className="bg-zinc-900 p-4 rounded-xl border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold">Current Round</p><p className="text-xl font-bold text-blue-400 capitalize">{user.current_round_slug}</p></div>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-bold text-white flex items-center gap-2 pb-2 border-b border-zinc-800"><Workflow className="w-5 h-5 text-yellow-500" /> Flowchart Submission</h3>
-                                {data?.flowchart ? (
-                                    <div className="space-y-6">
-                                        {/* AI FEEDBACK SECTION */}
-                                        <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6">
-                                            <div className="flex-1 bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2">AI Score</p><div className="text-4xl font-bold text-blue-400">{data.flowchart.ai_score}<span className="text-lg text-zinc-600">/100</span></div></div>
-                                            <div className="flex-[2] bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2 flex items-center gap-2"><Cpu className="w-3 h-3" /> AI Feedback</p><p className="text-zinc-300 text-sm leading-relaxed">{data.flowchart.ai_feedback || "No feedback generated."}</p></div>
-                                        </div>
 
-                                        {/* VISUAL FLOWCHART VIEWER (Canvas) */}
-                                        <div className="space-y-2">
-                                            <p className="text-xs text-zinc-500 uppercase font-bold flex items-center gap-2"><Maximize2 className="w-3 h-3" /> Visual Replica</p>
-                                            <FlowchartViewer 
-                                                nodes={Array.isArray(data.flowchart.nodes) ? data.flowchart.nodes : []} 
-                                                edges={Array.isArray(data.flowchart.edges) ? data.flowchart.edges : []} 
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (<div className="text-center p-8 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800 text-zinc-500">No Flowchart submission found.</div>)}
+                {/* Content Layout */}
+                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                    
+                    {/* Left Sidebar */}
+                    <div className="w-full md:w-64 bg-zinc-900/30 border-r border-zinc-800 p-4 space-y-6 overflow-y-auto shrink-0">
+                        <div className="space-y-3">
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Status</p>
+                                <p className={cn("text-lg font-bold capitalize", user.status === 'frozen' ? 'text-orange-500' : 'text-green-500')}>{user.status}</p>
                             </div>
-                        </>
-                    )}
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Tab Switches</p>
+                                <p className="text-lg font-bold text-red-500">{user.tab_switches}</p>
+                            </div>
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Current Round</p>
+                                <p className="text-lg font-bold text-blue-400 capitalize">{user.current_round_slug}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-xs font-bold text-zinc-500 px-2 mb-2">SUBMISSIONS</p>
+                            <Button variant="ghost" onClick={() => setViewTab('mcq')} className={cn("w-full justify-start", viewTab === 'mcq' && "bg-zinc-800 text-white")}><ListChecks className="w-4 h-4 mr-2 text-green-500" /> MCQ Round</Button>
+                            <Button variant="ghost" onClick={() => setViewTab('flowchart')} className={cn("w-full justify-start", viewTab === 'flowchart' && "bg-zinc-800 text-white")}><Workflow className="w-4 h-4 mr-2 text-yellow-500" /> Flowchart</Button>
+                            <Button variant="ghost" onClick={() => setViewTab('coding')} className={cn("w-full justify-start", viewTab === 'coding' && "bg-zinc-800 text-white")}><Code className="w-4 h-4 mr-2 text-purple-500" /> Coding</Button>
+                        </div>
+                    </div>
+
+                    {/* Main View Area */}
+                    <div className="flex-1 overflow-y-auto p-6 bg-black/20">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center h-full text-zinc-500"><RefreshCw className="w-10 h-10 animate-spin mb-4" /><p>Retrieving classified logs...</p></div>
+                        ) : (
+                            <>
+                                {viewTab === 'mcq' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <h3 className="text-lg font-bold text-green-400 flex items-center gap-2 border-b border-zinc-800 pb-2"><ListChecks className="w-5 h-5" /> MCQ Submission</h3>
+                                        {data?.mcq ? (
+                                            <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6">
+                                                <div className="text-center mb-6">
+                                                    <p className="text-sm text-zinc-500 mb-1">Total Score</p>
+                                                    <div className="text-5xl font-bold text-white">{data.mcq.score}</div>
+                                                </div>
+                                                <div className="bg-black/40 p-4 rounded-lg border border-zinc-800 font-mono text-xs text-zinc-400 whitespace-pre-wrap max-h-[300px] overflow-auto">
+                                                    {JSON.stringify(data.mcq.answers, null, 2)}
+                                                </div>
+                                                <p className="text-xs text-zinc-600 mt-2 text-right">Submitted: {new Date(data.mcq.timestamp).toLocaleString()}</p>
+                                            </div>
+                                        ) : <div className="text-center p-12 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800 text-zinc-500">No MCQ data found.</div>}
+                                    </div>
+                                )}
+
+                                {viewTab === 'flowchart' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <h3 className="text-lg font-bold text-yellow-400 flex items-center gap-2 border-b border-zinc-800 pb-2"><Workflow className="w-5 h-5" /> Flowchart Submission</h3>
+                                        {data?.flowchart ? (
+                                            <div className="space-y-6">
+                                                <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6">
+                                                    <div className="flex-1 bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2">AI Score</p><div className="text-4xl font-bold text-blue-400">{data.flowchart.ai_score}<span className="text-lg text-zinc-600">/100</span></div></div>
+                                                    <div className="flex-[2] bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2 flex items-center gap-2"><Cpu className="w-3 h-3" /> AI Feedback</p><p className="text-zinc-300 text-sm leading-relaxed">{data.flowchart.ai_feedback || "No feedback generated."}</p></div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold flex items-center gap-2"><Maximize2 className="w-3 h-3" /> Visual Replica</p>
+                                                    <FlowchartViewer 
+                                                        nodes={Array.isArray(data.flowchart.nodes) ? data.flowchart.nodes : []} 
+                                                        edges={Array.isArray(data.flowchart.edges) ? data.flowchart.edges : []} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : <div className="text-center p-12 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800 text-zinc-500">No Flowchart submission found.</div>}
+                                    </div>
+                                )}
+
+                                {viewTab === 'coding' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <h3 className="text-lg font-bold text-purple-400 flex items-center gap-2 border-b border-zinc-800 pb-2"><Code className="w-5 h-5" /> Coding Submission</h3>
+                                        {data?.coding ? (
+                                            <div className="space-y-6">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                                                        <p className="text-xs text-zinc-500 uppercase font-bold">Total Score</p>
+                                                        <div className="text-3xl font-bold text-white">{data.coding.score || 0}</div>
+                                                    </div>
+                                                    <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800">
+                                                        <p className="text-xs text-zinc-500 uppercase font-bold">Test Cases Passed</p>
+                                                        <div className="text-3xl font-bold text-green-400">{data.coding.test_cases_passed || 0}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <div className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden">
+                                                        <div className="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 text-xs font-bold text-zinc-400">PROBLEM 1 SOLUTION</div>
+                                                        <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto">
+                                                            <code>{data.coding.problem_1_code || "// No code submitted"}</code>
+                                                        </pre>
+                                                    </div>
+                                                    <div className="bg-black/40 border border-zinc-800 rounded-xl overflow-hidden">
+                                                        <div className="bg-zinc-900/80 px-4 py-2 border-b border-zinc-800 text-xs font-bold text-zinc-400">PROBLEM 2 SOLUTION</div>
+                                                        <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto">
+                                                            <code>{data.coding.problem_2_code || "// No code submitted"}</code>
+                                                        </pre>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : <div className="text-center p-12 bg-zinc-900/30 rounded-xl border border-dashed border-zinc-800 text-zinc-500">No Coding submission found.</div>}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -150,10 +289,7 @@ export default function AdminPanel() {
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Game Config State
     const [config, setConfig] = useState({ mcq: '15', flowchart: '30', coding: '45' });
-
-    // Inspection State
     const [selectedUser, setSelectedUser] = useState<Participant | null>(null);
     const [inspectionData, setInspectionData] = useState<InspectionData | null>(null);
     const [loadingInspection, setLoadingInspection] = useState(false);
@@ -176,15 +312,13 @@ export default function AdminPanel() {
         title: '', description: '', req1: '', req2: '', req3: '', req4: ''
     });
 
-    // --- DYNAMIC COUNTS ---
+    // Dynamic Counts
     const waitingCount = participants.filter(p => p.current_round_slug === 'waiting').length;
+    const rulesCount = participants.filter(p => p.current_round_slug === 'rules').length; 
     const mcqCount = participants.filter(p => p.current_round_slug === 'mcq').length;
     const flowchartCount = participants.filter(p => p.current_round_slug === 'flowchart').length;
     const codingCount = participants.filter(p => p.current_round_slug === 'coding').length;
 
-    // ---------------------------------------------------------
-    // 1. DATA FETCHING
-    // ---------------------------------------------------------
     const fetchData = async () => {
         if (participants.length === 0) setLoading(true);
 
@@ -196,7 +330,7 @@ export default function AdminPanel() {
                 setParticipants(studentsOnly);
             }
 
-            // Fetch Questions & Problems
+            // Fetch Questions
             const { data: qData } = await supabase.from('questions').select('*').order('created_at', { ascending: false });
             if (qData) setQuestions(qData);
 
@@ -205,24 +339,39 @@ export default function AdminPanel() {
 
             // Fetch Leaderboard
             const { data: lData } = await supabase.from('leaderboard').select('*');
+            
+            // Robustly fetch submission details (without failing if empty)
+            const { data: mcqSubs } = await supabase.from('mcq_submissions').select('user_id, updated_at, created_at');
+            const { data: flowSubs } = await supabase.from('flowchart_submissions').select('user_id, updated_at, created_at');
+            const { data: codeSubs } = await supabase.from('coding_submissions').select('user_id, updated_at, created_at');
+
             if (lData && users) {
                 const enhancedData = lData.map(entry => {
                     const user = users.find(u => u.user_id === entry.user_id);
-                    return { ...entry, user_email: user?.email || 'Unknown User' };
+                    
+                    const mcqSub = mcqSubs?.find(s => s.user_id === entry.user_id);
+                    const flowSub = flowSubs?.find(s => s.user_id === entry.user_id);
+                    const codeSub = codeSubs?.find(s => s.user_id === entry.user_id);
+
+                    return { 
+                        ...entry, 
+                        user_email: user?.email || 'Unknown User',
+                        // Prioritize Leaderboard Table Scores (since upsert is reliable)
+                        // Submission tables used primarily for timestamps here
+                        round1_time: mcqSub?.updated_at || mcqSub?.created_at || entry.updated_at,
+                        round2_time: flowSub?.updated_at || flowSub?.created_at,
+                        round3_time: codeSub?.updated_at || codeSub?.created_at
+                    };
                 });
 
                 enhancedData.sort((a, b) => {
-                    // Sort by Score (Desc)
                     if (b.overall_score !== a.overall_score) return b.overall_score - a.overall_score;
-                    // Then by Time (Asc)
-                    const timeA = a.total_time_seconds || Number.MAX_SAFE_INTEGER;
-                    const timeB = b.total_time_seconds || Number.MAX_SAFE_INTEGER;
-                    return timeA - timeB;
+                    // Secondary sort by round 1 score if overall tied
+                    return b.round1_score - a.round1_score;
                 });
                 setLeaderboardData(enhancedData);
             }
 
-            // Fetch Config
             const { data: cData } = await supabase.from('game_config').select('*');
             if (cData) {
                 const newConfig = { ...config };
@@ -246,16 +395,13 @@ export default function AdminPanel() {
         const channel = supabase.channel('admin-dashboard')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'exam_sessions' }, () => fetchData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => fetchData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'game_config' }, () => fetchData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => fetchData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'flowchart_problems' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'mcq_submissions' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'flowchart_submissions' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'coding_submissions' }, () => fetchData())
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, []);
 
-    // ---------------------------------------------------------
-    // 2. ACTIONS
-    // ---------------------------------------------------------
     const formatTime = (isoString: string | null | undefined) => {
         if (!isoString) return <span className="text-zinc-600">--:--:--</span>;
         try {
@@ -282,22 +428,14 @@ export default function AdminPanel() {
         else { toast.success(`User status updated to: ${targetStatus}`); }
     };
 
-    // ✅ FULL LIBERTY MOVE: Allows moving users anywhere at any time
-    const moveUserToRound = async (userId: string, round: 'mcq' | 'flowchart' | 'coding') => {
-        if(!confirm(`⚠️ FORCE MOVE: Send user to ${round.toUpperCase()}? This will override their current progress.`)) return;
-        
-        // Optimistic Update
+    const moveUserToRound = async (userId: string, round: 'mcq' | 'flowchart' | 'coding' | 'rules') => {
+        if(!confirm(`⚠️ FORCE MOVE: Send user to ${round.toUpperCase()}?`)) return;
         setParticipants(prev => prev.map(p => p.user_id === userId ? { ...p, current_round_slug: round } : p));
-        
-        const { error } = await supabase.from('exam_sessions')
-            .update({ current_round_slug: round })
-            .eq('user_id', userId);
-        
+        const { error } = await supabase.from('exam_sessions').update({ current_round_slug: round }).eq('user_id', userId);
         if(error) { toast.error("Move failed"); fetchData(); }
         else { toast.success(`Moved to ${round.toUpperCase()}`); }
     };
 
-    // ✅ SAVE CONFIG: Updates time limits in DB
     const saveSettings = async () => {
         setLoading(true);
         const updates = [
@@ -319,23 +457,70 @@ export default function AdminPanel() {
     };
 
     const inspectUser = async (user: Participant) => {
+        console.log("🔍 Inspecting User:", user.user_id);
         setSelectedUser(user);
         setLoadingInspection(true);
         setInspectionData(null);
+        
         try {
-            const { data } = await supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-            setInspectionData({ flowchart: data || null });
-        } catch (err) { console.error("Inspection failed:", err); } finally { setLoadingInspection(false); }
+            const { data: flowData } = await supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const { data: mcqData } = await supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).limit(1).maybeSingle(); 
+            const { data: codingData } = await supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).limit(1).maybeSingle();
+
+            setInspectionData({ 
+                flowchart: flowData ? { ...flowData, timestamp: flowData.updated_at || flowData.created_at } : null,
+                mcq: mcqData ? { ...mcqData, timestamp: mcqData.updated_at || mcqData.created_at } : null,
+                coding: codingData ? { ...codingData, timestamp: codingData.updated_at || codingData.created_at } : null
+            });
+        } catch (err) { 
+            console.error("Critical Inspection Failure:", err);
+            toast.error("Error fetching submission details.");
+        } finally { 
+            setLoadingInspection(false); 
+        }
     };
 
     const closeInspection = () => { setSelectedUser(null); setInspectionData(null); };
+
+    const consolidateSubmissions = async () => {
+        if(!confirm("⚠️ SYNC FINAL SUBMISSIONS? This will aggregate data for users who finished all rounds into the 'submissions' table.")) return;
+        setLoading(true);
+        try {
+            const { data: entries } = await supabase.from('leaderboard').select('*');
+            if(!entries) throw new Error("No data");
+
+            let count = 0;
+            for (const entry of entries) {
+                if (entry.round1_score !== null && entry.round2_score !== null && entry.round3_score !== null) {
+                    await supabase.from('submissions').upsert({
+                        user_id: entry.user_id,
+                        total_score: entry.overall_score,
+                        round1_score: entry.round1_score,
+                        round2_score: entry.round2_score,
+                        round3_score: entry.round3_score,
+                        completed_at: new Date().toISOString()
+                    }, { onConflict: 'user_id' });
+                    count++;
+                }
+            }
+            toast.success(`Synced ${count} records to Submissions Table.`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Sync failed.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // --- ROUND CONTROLS (BULK) ---
     const startExam = async () => {
         if (!confirm("⚠️ START EXAM?")) return;
         const toastId = toast.loading("Starting Round 1...");
-        setParticipants(prev => prev.map(p => p.current_round_slug === 'waiting' ? { ...p, current_round_slug: 'mcq', status: 'active' } : p));
-        const { error } = await supabase.from('exam_sessions').update({ current_round_slug: 'mcq', status: 'active' }).eq('current_round_slug', 'waiting').select();
+        setParticipants(prev => prev.map(p => (p.current_round_slug === 'waiting' || p.current_round_slug === 'rules') ? { ...p, current_round_slug: 'mcq', status: 'active' } : p));
+        const { error } = await supabase.from('exam_sessions')
+            .update({ current_round_slug: 'mcq', status: 'active' })
+            .in('current_round_slug', ['waiting', 'rules']) 
+            .select();
         if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Round 1 Started!`, { id: toastId });
     };
 
@@ -360,6 +545,17 @@ export default function AdminPanel() {
         setParticipants(prev => prev.map(p => ({ ...p, current_round_slug: 'waiting' })));
         await supabase.from('exam_sessions').update({ current_round_slug: 'waiting' }).neq('status', 'disqualified');
         toast.info("Reset Successful.");
+    };
+
+    const moveAllToRules = async () => {
+        if (!confirm("⚠️ MOVE ALL TO RULES? Active/Waiting users will be redirected.")) return;
+        const toastId = toast.loading("Redirecting to Rules...");
+        setParticipants(prev => prev.map(p => p.status !== 'disqualified' ? { ...p, current_round_slug: 'rules' } : p));
+        const { error } = await supabase.from('exam_sessions')
+            .update({ current_round_slug: 'rules' })
+            .neq('status', 'disqualified');
+        if (error) toast.error("Action failed", { id: toastId }); 
+        else toast.success("Everyone moved to Rules Page.", { id: toastId });
     };
 
     // --- QUESTION MANAGEMENT ---
@@ -430,8 +626,13 @@ export default function AdminPanel() {
                 {/* ======================= MONITOR TAB ======================= */}
                 {activeTab === 'monitor' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {[{ label: 'Active', count: participants.filter(p => p.status === 'active').length, color: 'text-green-500' }, { label: 'Frozen', count: participants.filter(p => p.status === 'frozen').length, color: 'text-orange-500' }, { label: 'Waiting', count: participants.filter(p => p.current_round_slug === 'waiting').length, color: 'text-blue-500' }, { label: 'Disqualified', count: participants.filter(p => p.status === 'disqualified').length, color: 'text-red-600' }].map((stat, i) => (
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            {[{ label: 'Active', count: participants.filter(p => p.status === 'active').length, color: 'text-green-500' }, 
+                              { label: 'Frozen', count: participants.filter(p => p.status === 'frozen').length, color: 'text-orange-500' }, 
+                              { label: 'Waiting', count: waitingCount, color: 'text-blue-500' }, 
+                              { label: 'Rules', count: rulesCount, color: 'text-purple-500' },
+                              { label: 'Banned', count: participants.filter(p => p.status === 'disqualified').length, color: 'text-red-600' }
+                            ].map((stat, i) => (
                                 <div key={i} className="bg-zinc-900/80 border border-zinc-800 p-4 rounded-xl">
                                     <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
                                     <div className={`text-3xl font-mono font-bold ${stat.color}`}>{stat.count}</div>
@@ -472,35 +673,10 @@ export default function AdminPanel() {
                                             <td className="p-4 text-center"><span className={cn("font-mono text-lg font-bold", p.tab_switches > 0 ? "text-red-500" : "text-zinc-700")}>{p.tab_switches}</span></td>
                                             <td className="p-4 pr-6 flex justify-end items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                                                 
-                                                {/* ROUND JUMPERS (UNLOCKED & COLORED) */}
                                                 <div className="flex bg-zinc-950 rounded-lg p-1 border border-zinc-800 mr-2">
-                                                    <Button 
-                                                        size="icon" 
-                                                        variant="ghost" 
-                                                        onClick={() => moveUserToRound(p.user_id, 'mcq')} 
-                                                        className={cn("h-7 w-7", p.current_round_slug === 'mcq' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-green-400 hover:bg-green-900/20")}
-                                                        title="Move to MCQ"
-                                                    >
-                                                        <ListChecks className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button 
-                                                        size="icon" 
-                                                        variant="ghost" 
-                                                        onClick={() => moveUserToRound(p.user_id, 'flowchart')} 
-                                                        className={cn("h-7 w-7", p.current_round_slug === 'flowchart' ? "bg-yellow-600 text-black shadow-lg" : "text-zinc-500 hover:text-yellow-400 hover:bg-yellow-900/20")}
-                                                        title="Move to Flowchart"
-                                                    >
-                                                        <Workflow className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button 
-                                                        size="icon" 
-                                                        variant="ghost" 
-                                                        onClick={() => moveUserToRound(p.user_id, 'coding')} 
-                                                        className={cn("h-7 w-7", p.current_round_slug === 'coding' ? "bg-purple-600 text-white shadow-lg" : "text-zinc-500 hover:text-purple-400 hover:bg-purple-900/20")}
-                                                        title="Move to Coding"
-                                                    >
-                                                        <Code className="w-4 h-4" />
-                                                    </Button>
+                                                    <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'mcq')} className={cn("h-7 w-7", p.current_round_slug === 'mcq' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-green-400 hover:bg-green-900/20")} title="Move to MCQ"><ListChecks className="w-4 h-4" /></Button>
+                                                    <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'flowchart')} className={cn("h-7 w-7", p.current_round_slug === 'flowchart' ? "bg-yellow-600 text-black shadow-lg" : "text-zinc-500 hover:text-yellow-400 hover:bg-yellow-900/20")} title="Move to Flowchart"><Workflow className="w-4 h-4" /></Button>
+                                                    <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'coding')} className={cn("h-7 w-7", p.current_round_slug === 'coding' ? "bg-purple-600 text-white shadow-lg" : "text-zinc-500 hover:text-purple-400 hover:bg-purple-900/20")} title="Move to Coding"><Code className="w-4 h-4" /></Button>
                                                 </div>
 
                                                 <Button size="sm" variant="ghost" onClick={() => inspectUser(p)} className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" title="Inspect"><Eye className="w-4 h-4" /></Button>
@@ -521,28 +697,17 @@ export default function AdminPanel() {
                     </div>
                 )}
 
-                {/* ======================= SETTINGS TAB (NEW) ======================= */}
+                {/* ======================= SETTINGS TAB ======================= */}
                 {activeTab === 'settings' && (
                     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="bg-zinc-900/80 border border-zinc-800 p-8 rounded-2xl shadow-xl">
                             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2"><Settings className="w-6 h-6 text-red-500" /> Game Configuration</h2>
                             <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-bold text-zinc-400 mb-1 block">MCQ Duration (Minutes)</label>
-                                    <Input value={config.mcq} onChange={e => setConfig({ ...config, mcq: e.target.value })} className="bg-black border-zinc-700" type="number" />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-zinc-400 mb-1 block">Flowchart Duration (Minutes)</label>
-                                    <Input value={config.flowchart} onChange={e => setConfig({ ...config, flowchart: e.target.value })} className="bg-black border-zinc-700" type="number" />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-bold text-zinc-400 mb-1 block">Coding Duration (Minutes)</label>
-                                    <Input value={config.coding} onChange={e => setConfig({ ...config, coding: e.target.value })} className="bg-black border-zinc-700" type="number" />
-                                </div>
+                                <div><label className="text-sm font-bold text-zinc-400 mb-1 block">MCQ Duration (Minutes)</label><Input value={config.mcq} onChange={e => setConfig({ ...config, mcq: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
+                                <div><label className="text-sm font-bold text-zinc-400 mb-1 block">Flowchart Duration (Minutes)</label><Input value={config.flowchart} onChange={e => setConfig({ ...config, flowchart: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
+                                <div><label className="text-sm font-bold text-zinc-400 mb-1 block">Coding Duration (Minutes)</label><Input value={config.coding} onChange={e => setConfig({ ...config, coding: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
                             </div>
-                            <Button onClick={saveSettings} disabled={loading} className="w-full mt-8 bg-red-600 hover:bg-red-500 text-white font-bold h-12">
-                                <Save className="w-4 h-4 mr-2" /> Save Configuration
-                            </Button>
+                            <Button onClick={saveSettings} disabled={loading} className="w-full mt-8 bg-red-600 hover:bg-red-500 text-white font-bold h-12"><Save className="w-4 h-4 mr-2" /> Save Configuration</Button>
                         </div>
                     </div>
                 )}
@@ -551,16 +716,16 @@ export default function AdminPanel() {
                 {activeTab === 'controls' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="grid md:grid-cols-3 gap-6">
+                            {/* Round Start Buttons */}
                             <div className="bg-zinc-900/80 border border-green-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-green-600/50 transition-colors">
                                 <h3 className="text-lg font-bold text-green-400 mb-2 flex items-center gap-2"><Play className="w-5 h-5" /> Start Round 1</h3>
-                                <p className="text-zinc-400 mb-2 text-xs">Waiting Room → MCQ</p>
+                                <p className="text-zinc-400 mb-2 text-xs">Waiting/Rules → MCQ</p>
                                 <div className="flex items-center gap-4 mb-4 text-xs">
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-zinc-500">Waiting:</span><span className="font-bold text-white">{waitingCount}</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500"></div><span className="text-zinc-500">MCQ:</span><span className="font-bold text-white">{mcqCount}</span></div>
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-purple-500"></div><span className="text-zinc-500">Rules:</span><span className="font-bold text-white">{rulesCount}</span></div>
                                 </div>
                                 <Button onClick={startExam} disabled={loading} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 1"}</Button>
                             </div>
-
                             <div className="bg-zinc-900/80 border border-yellow-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-yellow-600/50 transition-colors">
                                 <h3 className="text-lg font-bold text-yellow-400 mb-2 flex items-center gap-2"><Workflow className="w-5 h-5" /> Start Round 2</h3>
                                 <p className="text-zinc-400 mb-2 text-xs">MCQ → Flowchart</p>
@@ -570,7 +735,6 @@ export default function AdminPanel() {
                                 </div>
                                 <Button onClick={startRound2} disabled={loading} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 2"}</Button>
                             </div>
-
                             <div className="bg-zinc-900/80 border border-purple-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-purple-600/50 transition-colors">
                                 <h3 className="text-lg font-bold text-purple-400 mb-2 flex items-center gap-2"><Code className="w-5 h-5" /> Start Round 3</h3>
                                 <p className="text-zinc-400 mb-2 text-xs">Flowchart → Coding</p>
@@ -581,10 +745,25 @@ export default function AdminPanel() {
                                 <Button onClick={startRound3} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 3"}</Button>
                             </div>
                         </div>
-                        <div className="bg-zinc-900/80 border border-red-900/50 p-8 rounded-2xl relative overflow-hidden group hover:border-red-600/50 transition-colors">
-                            <h3 className="text-xl font-bold text-red-500 mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Emergency Reset</h3>
-                            <p className="text-zinc-400 mb-6 text-sm">Pulls everyone back to <strong>Waiting Room</strong>.</p>
-                            <Button onClick={resetAllToWaiting} disabled={loading} variant="destructive" className="w-full h-12">{loading ? "Resetting..." : "RESET TO WAITING"}</Button>
+                        
+                        <div className="grid md:grid-cols-3 gap-6">
+                            <div className="bg-zinc-900/80 border border-blue-900/50 p-8 rounded-2xl relative overflow-hidden group hover:border-blue-600/50 transition-colors">
+                                <h3 className="text-xl font-bold text-blue-500 mb-2 flex items-center gap-2"><BookOpen className="w-5 h-5" /> Redirect to Rules</h3>
+                                <p className="text-zinc-400 mb-6 text-sm">Moves everyone to the <strong>Rules Verification</strong> page.</p>
+                                <Button onClick={moveAllToRules} disabled={loading} className="w-full h-12 bg-blue-700 hover:bg-blue-600 text-white font-bold">{loading ? "Moving..." : "MOVE EVERYONE TO RULES"}</Button>
+                            </div>
+
+                            <div className="bg-zinc-900/80 border border-emerald-900/50 p-8 rounded-2xl relative overflow-hidden group hover:border-emerald-600/50 transition-colors">
+                                <h3 className="text-xl font-bold text-emerald-500 mb-2 flex items-center gap-2"><Database className="w-5 h-5" /> Consolidate Data</h3>
+                                <p className="text-zinc-400 mb-6 text-sm">Syncs final scores to <strong>Submissions Table</strong>.</p>
+                                <Button onClick={consolidateSubmissions} disabled={loading} className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 text-white font-bold">{loading ? "Syncing..." : "SYNC FINAL SUBMISSIONS"}</Button>
+                            </div>
+
+                            <div className="bg-zinc-900/80 border border-red-900/50 p-8 rounded-2xl relative overflow-hidden group hover:border-red-600/50 transition-colors">
+                                <h3 className="text-xl font-bold text-red-500 mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> Emergency Reset</h3>
+                                <p className="text-zinc-400 mb-6 text-sm">Pulls everyone back to <strong>Waiting Room</strong>.</p>
+                                <Button onClick={resetAllToWaiting} disabled={loading} variant="destructive" className="w-full h-12">{loading ? "Resetting..." : "RESET TO WAITING"}</Button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -598,7 +777,6 @@ export default function AdminPanel() {
                             <Button onClick={() => setQuestionsTab('coding')} variant="ghost" className={cn("rounded-none border-b-2 transition-all", questionsTab === 'coding' ? "border-purple-500 text-purple-400" : "border-transparent text-zinc-500 hover:text-zinc-300")}><Code className="w-4 h-4 mr-2" /> Coding Round</Button>
                         </div>
 
-                        {/* MCQ, FLOWCHART, CODING FORMS (Reused logic) */}
                         {questionsTab === 'mcq' && (
                             <div className="grid md:grid-cols-[400px,1fr] gap-6">
                                 <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl h-fit">
@@ -607,9 +785,8 @@ export default function AdminPanel() {
                                         <Input placeholder="Title" className="bg-black border-zinc-700" value={newQ.title} onChange={e => setNewQ({ ...newQ, title: e.target.value, round_id: 'mcq' })} />
                                         <Textarea placeholder="Description" className="bg-black border-zinc-700 min-h-[80px]" value={newQ.description} onChange={e => setNewQ({ ...newQ, description: e.target.value })} />
                                         <div className="space-y-2 bg-zinc-950 p-3 rounded border border-zinc-800">
-                                            <p className="text-xs font-bold text-zinc-500">OPTIONS</p>
                                             {['A', 'B', 'C', 'D'].map(opt => (<Input key={opt} placeholder={`Option ${opt}`} className="h-8 bg-zinc-900 border-zinc-700" value={(newQ as any)[`option${opt}`]} onChange={e => setNewQ({ ...newQ, [`option${opt}`]: e.target.value })} />))}
-                                            <Input placeholder="Correct Answer (e.g., Option A content)" className="h-8 bg-green-900/20 border-green-900 text-green-400" value={newQ.correct} onChange={e => setNewQ({ ...newQ, correct: e.target.value })} />
+                                            <Input placeholder="Correct Answer" className="h-8 bg-green-900/20 border-green-900 text-green-400" value={newQ.correct} onChange={e => setNewQ({ ...newQ, correct: e.target.value })} />
                                         </div>
                                         <Button onClick={handleAddQuestion} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold">Save MCQ</Button>
                                     </div>
@@ -636,9 +813,7 @@ export default function AdminPanel() {
                                         <Textarea placeholder="Problem Description" className="bg-zinc-900 border-zinc-700 text-sm min-h-[60px]" value={newFlowchart.description} onChange={e => setNewFlowchart({ ...newFlowchart, description: e.target.value })} />
                                         <div className="space-y-2">
                                             <p className="text-xs text-zinc-500">Requirements</p>
-                                            <Input placeholder="Req 1" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newFlowchart.req1} onChange={e => setNewFlowchart({ ...newFlowchart, req1: e.target.value })} />
-                                            <Input placeholder="Req 2" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newFlowchart.req2} onChange={e => setNewFlowchart({ ...newFlowchart, req2: e.target.value })} />
-                                            <Input placeholder="Req 3" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newFlowchart.req3} onChange={e => setNewFlowchart({ ...newFlowchart, req3: e.target.value })} />
+                                            {[1, 2, 3, 4].map(i => <Input key={i} placeholder={`Req ${i}`} className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={(newFlowchart as any)[`req${i}`]} onChange={e => setNewFlowchart({ ...newFlowchart, [`req${i}`]: e.target.value })} />)}
                                         </div>
                                         <Button onClick={handleAddFlowchart} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold h-9">Add Flowchart Problem</Button>
                                     </div>
@@ -666,12 +841,6 @@ export default function AdminPanel() {
                                     <div className="space-y-4">
                                         <Input placeholder="Title" className="bg-black border-zinc-700" value={newQ.title} onChange={e => setNewQ({ ...newQ, title: e.target.value, round_id: 'coding' })} />
                                         <Textarea placeholder="Description" className="bg-black border-zinc-700 min-h-[80px]" value={newQ.description} onChange={e => setNewQ({ ...newQ, description: e.target.value })} />
-                                        <div className="space-y-3 bg-zinc-950 p-4 rounded border border-zinc-800">
-                                            <p className="text-xs font-bold text-purple-400">DETAILS</p>
-                                            <Textarea placeholder="Code Snippet" className="bg-zinc-900 border-zinc-700 font-mono text-xs min-h-[80px]" value={newQ.code_snippet} onChange={e => setNewQ({ ...newQ, code_snippet: e.target.value })} />
-                                            <div className="space-y-2"><p className="text-xs font-bold text-zinc-500">Example 1</p><Input placeholder="Input" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newQ.example1_input} onChange={e => setNewQ({ ...newQ, example1_input: e.target.value })} /><Input placeholder="Output" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newQ.example1_output} onChange={e => setNewQ({ ...newQ, example1_output: e.target.value })} /></div>
-                                            <div className="space-y-2"><p className="text-xs font-bold text-zinc-500">Constraints</p><Input placeholder="C1" className="h-8 bg-zinc-900 border-zinc-700 text-xs" value={newQ.constraint1} onChange={e => setNewQ({ ...newQ, constraint1: e.target.value })} /></div>
-                                        </div>
                                         <Button onClick={handleAddQuestion} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold">Save Coding Problem</Button>
                                     </div>
                                 </div>
@@ -714,26 +883,24 @@ export default function AdminPanel() {
                                     {leaderboardData.map((entry, i) => (
                                         <tr key={entry.id} className="hover:bg-white/5 transition-colors">
                                             <td className="p-4 pl-6">
-                                                <span className={cn("text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold", i < 3 ? "bg-yellow-500 text-black" : "bg-zinc-800 text-zinc-500")}>
-                                                    {i + 1}
-                                                </span>
+                                                <span className={cn("text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold", i < 3 ? "bg-yellow-500 text-black" : "bg-zinc-800 text-zinc-500")}>{i + 1}</span>
                                             </td>
                                             <td className="p-4 font-medium text-white">
                                                 <div><p className="text-sm font-bold text-zinc-200">{entry.user_email}</p><p className="font-mono text-[10px] text-zinc-600">{entry.user_id.slice(0, 8)}</p></div>
                                             </td>
                                             
-                                            {/* Round Scores with Time Mockup */}
+                                            {/* Round Scores with ACTUAL SUBMISSION TIME */}
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round1_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {entry.round1_time || "--"}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round1_time)}</div>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round2_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {entry.round2_time || "--"}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round2_time)}</div>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round3_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {entry.round3_time || "--"}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round3_time)}</div>
                                             </td>
 
                                             {/* Total Score & Time */}
@@ -754,7 +921,7 @@ export default function AdminPanel() {
                     </div>
                 )}
 
-            </div>
+            </div>         
 
             {/* INSPECTION MODAL */}
             {selectedUser && (

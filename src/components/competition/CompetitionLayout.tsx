@@ -28,7 +28,7 @@ export const CompetitionLayout = () => {
   } = useCompetitionStore();
 
   const [initializing, setInitializing] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false); // For Manual Refresh
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Layout State for Sidebar
   const [timelineHover, setTimelineHover] = useState(false);
@@ -73,15 +73,18 @@ export const CompetitionLayout = () => {
 
   // 3. BACKUP POLLING
   useEffect(() => {
-    if (currentRound !== 'waiting' || !userId) return;
+    if (!userId) return;
+    const shouldPoll = currentRound === 'waiting' || competitionStatus === 'active';
+    if (!shouldPoll) return;
+
     const interval = setInterval(async () => {
       const { data } = await supabase.from('exam_sessions').select('*').eq('user_id', userId).single();
-      if (data && data.current_round_slug !== 'waiting') {
+      if (data) {
         syncSession(data);
       }
     }, 4000);
     return () => clearInterval(interval);
-  }, [currentRound, userId, syncSession]);
+  }, [currentRound, userId, syncSession, competitionStatus]);
 
   // 4. ANTI-CHEAT LOGIC
   useEffect(() => {
@@ -98,7 +101,6 @@ export const CompetitionLayout = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [currentRound, competitionStatus, logTabSwitch]);
 
-  // MANUAL REFRESH HANDLER
   const handleManualRefresh = async () => {
     if (!userId) return;
     setIsRefreshing(true);
@@ -119,14 +121,13 @@ export const CompetitionLayout = () => {
     }
   };
 
-  // RENDER ROUND CONTENT
   const renderRound = () => {
     switch (currentRound) {
       case 'rules': return <RulesPage />;
       case 'waiting': return <WaitingArea />;
       case 'mcq': return <MCQRound />;
       case 'flowchart': return <FlowchartRound />;
-      case 'coding': return <CodingRound />;
+      case 'coding': return <CodingRound isSidebarExpanded={isSidebarExpanded} />;
       case 'completed': return <CompletionPage />;
       default: return <RulesPage />;
     }
@@ -141,10 +142,9 @@ export const CompetitionLayout = () => {
     );
   }
 
-  // 5. FROZEN SCREEN (With Refresh Button)
   if (competitionStatus === 'frozen') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden p-6 font-sans">
+      <div className="fixed inset-0 flex items-center justify-center bg-black relative overflow-hidden p-6 font-sans z-50">
          <div className="absolute inset-0 bg-orange-500/10 z-0 animate-pulse" />
          <div className="z-10 text-center max-w-lg w-full p-8 bg-zinc-900/90 backdrop-blur-xl border border-orange-500/50 rounded-2xl shadow-2xl shadow-orange-500/20">
             <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -176,10 +176,9 @@ export const CompetitionLayout = () => {
     );
   }
 
-  // 6. DISQUALIFIED SCREEN
   if (competitionStatus === 'disqualified') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black relative p-6">
+      <div className="fixed inset-0 flex items-center justify-center bg-black relative p-6 z-50">
         <div className="text-center max-w-md">
           <AlertTriangle className="w-20 h-20 text-red-600 mx-auto mb-6" />
           <h1 className="text-4xl font-bold text-red-600 mb-4 font-display">DISQUALIFIED</h1>
@@ -189,10 +188,10 @@ export const CompetitionLayout = () => {
     );
   }
 
-  // 7. MAIN LAYOUT
   return (
-    <div className="h-screen flex flex-col relative bg-black text-white selection:bg-indigo-500/30 overflow-hidden">
-      <div className="fixed inset-0 z-0 pointer-events-none">
+    // ✅ FIX: 'fixed inset-0' locks the viewport
+    <div className="fixed inset-0 flex flex-col bg-black text-white selection:bg-indigo-500/30 overflow-hidden">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <AnimatedBackground />
       </div>
 
@@ -200,7 +199,8 @@ export const CompetitionLayout = () => {
         <CompetitionHeader />
       </div>
 
-      <main className="relative z-10 flex-1 flex overflow-hidden m-4 gap-4 transition-all duration-500">
+      {/* ✅ FIX: 'min-h-0' is critical here to allow flex child scrolling */}
+      <main className="relative z-10 flex-1 flex min-h-0 overflow-hidden m-4 gap-4 transition-all duration-500">
         {/* SIDEBAR */}
         <div className="hidden lg:block h-full shrink-0">
           <motion.div
@@ -210,7 +210,6 @@ export const CompetitionLayout = () => {
             className="h-full relative"
           >
             {currentRound === 'coding' ? (
-              // Coding Mode: Collapsible Sidebar
               <div
                 className="h-full flex flex-col"
                 onMouseEnter={() => setTimelineHover(true)}
@@ -220,7 +219,6 @@ export const CompetitionLayout = () => {
                   "h-full bg-zinc-950/80 backdrop-blur border border-zinc-800 rounded-xl overflow-hidden relative transition-colors duration-300",
                   isSidebarExpanded ? "shadow-2xl border-indigo-500/20" : "hover:border-indigo-500/50"
                 )}>
-                  {/* PIN BUTTON */}
                   <div className={cn("absolute top-3 right-3 z-10 transition-opacity duration-300", isSidebarExpanded ? "opacity-100 visible" : "opacity-0 invisible")}>
                     <button
                       onClick={() => setIsPinned(!isPinned)}
@@ -232,7 +230,7 @@ export const CompetitionLayout = () => {
                   </div>
 
                   {isSidebarExpanded ? (
-                    <div className="h-full overflow-y-auto custom-scrollbar p-4 animate-in fade-in duration-300">
+                    <div className="h-full overflow-y-auto custom-scrollbar p-4 animate-in fade-in duration-300 overscroll-y-contain">
                       <CompetitionTimeline />
                     </div>
                   ) : (
@@ -245,9 +243,8 @@ export const CompetitionLayout = () => {
                 </div>
               </div>
             ) : (
-              // Standard Mode: Fixed Sidebar
               <div className="h-full bg-zinc-950/80 backdrop-blur border border-zinc-800 rounded-xl p-4 overflow-hidden shadow-xl animate-in fade-in slide-in-from-left-4 duration-500">
-                <div className="h-full overflow-y-auto custom-scrollbar">
+                <div className="h-full overflow-y-auto custom-scrollbar overscroll-y-contain">
                   <CompetitionTimeline />
                 </div>
               </div>
@@ -264,7 +261,7 @@ export const CompetitionLayout = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.99 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="h-full w-full"
+              className="h-full w-full relative" // Added relative for child absolute positioning
             >
               {renderRound()}
             </motion.div>

@@ -28,32 +28,38 @@ export const MCQRound = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
 
-  //  NOW these functions exist in the store
+  // Store hooks
   const {
     completeRound,
-    incrementTabSwitch, // Alias for logTabSwitch
+    incrementTabSwitch,
     startMCQ,
     mcqStartTime,
-    disqualify, // Alias for disqualifyUser
     userId,
     email
   } = useCompetitionStore();
 
   const currentQuestion = questions[currentIndex];
 
-  // 0. Fetch questions from database
+  // 0. Fetch and Randomize Questions
   useEffect(() => {
     const fetchQuestions = async () => {
+      // Ensure we have a user ID before fetching to avoid key issues
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserId = user?.id || userId;
+
+      if (!currentUserId) return;
+
       try {
+        // Fetch ALL questions for the round
         const { data, error } = await supabase
           .from('questions')
           .select('*')
-          .eq('round_id', 'mcq')
-          .order('created_at', { ascending: true });
+          .eq('round_id', 'mcq');
 
         if (error) throw error;
+
         if (data && data.length > 0) {
-          // Parse options if they are strings (handle legacy/import data issues)
+          // 1. Parse Options (Handle JSON string or Array)
           const parsedData = data.map((q: any) => {
             let parsedOptions = q.options;
             if (typeof q.options === 'string') {
@@ -66,24 +72,57 @@ export const MCQRound = () => {
             }
             return { ...q, options: parsedOptions };
           });
-          setQuestions(parsedData);
+
+          // 2. Random Selection Logic (10 Questions) with Persistence
+          const STORAGE_KEY = `mcq_assigned_${currentUserId}`;
+          const stored = localStorage.getItem(STORAGE_KEY);
+          
+          let selectedQuestions: Question[] = [];
+
+          if (stored) {
+             try {
+                 const storedIds = JSON.parse(stored);
+                 // Restore questions based on stored IDs to maintain order/selection on refresh
+                 selectedQuestions = storedIds
+                    .map((id: string) => parsedData.find((q: any) => q.id === id))
+                    .filter(Boolean); // Remove undefined if a question was deleted from DB
+             } catch (e) {
+                 console.error("Error parsing stored questions", e);
+             }
+          }
+
+          // If no valid stored session, generate new random set
+          if (selectedQuestions.length === 0) {
+             // Fisher-Yates Shuffle
+             const shuffled = [...parsedData];
+             for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+             }
+             // Slice first 10
+             selectedQuestions = shuffled.slice(0, 10);
+             
+             // Save to local storage
+             localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedQuestions.map(q => q.id)));
+          }
+
+          setQuestions(selectedQuestions);
         } else {
-          toast.error('No MCQ questions found. Please contact admin.');
+          toast.error('No MCQ questions found in database.');
         }
       } catch (err) {
         console.error('Failed to fetch questions:', err);
-        toast.error('Failed to load questions');
+        toast.error('Failed to load questions. Please refresh.');
       } finally {
         setLoadingQuestions(false);
       }
     };
 
     fetchQuestions();
-  }, []);
+  }, [userId]);
 
   // 1. Start timer on mount
   useEffect(() => {
-    // If start time is missing, set it
     if (!mcqStartTime) {
       startMCQ();
     }
@@ -149,71 +188,93 @@ export const MCQRound = () => {
   };
 
   const handleSubmit = useCallback(async () => {
+    if (isSubmitting) return; 
     setIsSubmitting(true);
 
     // Calculate Score
     let score = 0;
     questions.forEach(q => {
       const userAnswers = answers[q.id] || [];
-      // Find index of correct answer
-      // Note: q.options is now parsed, so it's an array of strings.
       const correctOptionIndex = q.options.findIndex(opt => opt === q.correct_answer);
-
-      // Exact match
       if (correctOptionIndex !== -1 && userAnswers.includes(correctOptionIndex)) {
         score += (q.points || 10);
       }
     });
 
-    console.log("Submitting Score:", score);
+    console.log("🚀 Attempting Submission...", { score, userId });
 
     try {
-      // Fetch authenticated user for RLS compliance
       const { data: { user } } = await supabase.auth.getUser();
       const authUserId = user?.id || userId;
 
-      if (authUserId) {
-        const timestamp = new Date().toISOString();
+      if (!authUserId) throw new Error("User ID not found.");
 
-        // 1. Upsert Profiles Table (Ensure it exists)
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authUserId,
-            email: email, // From store or auth user
-            score: score,
-            last_active: timestamp,
-            competition_status: 'active'
-            // full_name might be missing if not gathered elsewhere
-          }, { onConflict: 'id' });
+      const timestamp = new Date().toISOString();
 
-        if (profileError) console.error("Profile update failed:", profileError);
+      // 1. Update Profile
+      await supabase.from('profiles').upsert({
+          id: authUserId,
+          email: email,
+          score: score, 
+          last_active: timestamp,
+          competition_status: 'active'
+      }, { onConflict: 'id' });
 
-        // 2. Update Leaderboard Table
-        const { data: existing } = await supabase.from('leaderboard').select('*').eq('user_id', authUserId).maybeSingle();
-        const r2 = existing?.round2_score || 0;
-        const r3 = existing?.round3_score || 0;
-        const newOverall = score + r2 + r3;
-
-        const { error: lbError } = await supabase.from('leaderboard').upsert({
+      // 2. Submit MCQ Data
+      // Payload preparation
+      const submissionPayload = {
           user_id: authUserId,
-          round1_score: score,
-          overall_score: newOverall,
+          score: score,
+          answers: answers, // Supabase client auto-converts this to JSONB
           updated_at: timestamp
-        }, { onConflict: 'user_id' });
+      };
 
-        if (lbError) console.error("Leaderboard update failed:", lbError);
+      // Try UPSERT first (requires UNIQUE constraint on user_id)
+      const { error: upsertError } = await supabase
+          .from('mcq_submissions')
+          .upsert(submissionPayload, { onConflict: 'user_id' });
+
+      if (upsertError) {
+          console.error("⚠️ Upsert Failed (likely missing unique constraint). Trying INSERT...", upsertError.message);
+          
+          // Fallback: Try simple INSERT if upsert failed
+          // Note: This might duplicate data if run twice, but it saves the exam.
+          const { error: insertError } = await supabase
+            .from('mcq_submissions')
+            .insert([submissionPayload]);
+            
+          if (insertError) {
+             throw insertError; // Throw real error if both fail
+          }
       }
-    } catch (err) {
-      console.error("Score submission error:", err);
+
+      console.log("✅ MCQ Submission Successful");
+
+      // 3. Update Leaderboard
+      const { data: existing } = await supabase.from('leaderboard').select('*').eq('user_id', authUserId).maybeSingle();
+      const r2 = existing?.round2_score || 0;
+      const r3 = existing?.round3_score || 0;
+      
+      await supabase.from('leaderboard').upsert({
+        user_id: authUserId,
+        round1_score: score,
+        overall_score: score + r2 + r3,
+        updated_at: timestamp
+      }, { onConflict: 'user_id' });
+
+    } catch (err: any) {
+      console.error("❌ CRITICAL SUBMISSION ERROR:", err.message || err);
+      toast.error(`Submission Issue: ${err.message || "Please take a screenshot and contact admin"}`);
+      // We do NOT return here; we allow the transition to happen so the user isn't stuck.
     }
 
+    // Always transition user to next round even if DB glitch occurs (logs are saved in localStorage usually as backup)
     setTimeout(() => {
       setSubmitted(true);
       setIsSubmitting(false);
       completeRound('mcq');
     }, 1000);
-  }, [answers, questions, userId, completeRound]);
+  }, [answers, questions, userId, completeRound, email, isSubmitting]);
 
   const handleTimeUp = useCallback(() => {
     toast.error("Time's up! Auto-submitting your answers...");
@@ -363,7 +424,8 @@ export const MCQRound = () => {
                 disabled={isSubmitting}
                 className="bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 gap-2 text-white"
               >
-                <CheckCircle2 className="w-4 h-4" />
+                <Loader2 className={cn("w-4 h-4 animate-spin", !isSubmitting && "hidden")} />
+                <CheckCircle2 className={cn("w-4 h-4", isSubmitting && "hidden")} />
                 {isSubmitting ? 'Submitting...' : 'Submit All'}
               </Button>
             ) : (
@@ -381,7 +443,7 @@ export const MCQRound = () => {
 
       {/* Sidebar */}
       <div className="space-y-4">
-        {/* Pass the mcqStartTime from store to the timer if needed, or timer can use its own relative logic */}
+        {/* Timer */}
         <CompetitionTimer
           totalSeconds={30 * 60}
           onTimeUp={handleTimeUp}
