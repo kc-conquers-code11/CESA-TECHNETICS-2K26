@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 interface RoundTransitionProps {
   completedRound: string;
   nextRoundName: string;
-  nextRoundSlug: 'flowchart' | 'coding';
+  nextRoundSlug: 'flowchart' | 'coding' | 'completed';
 }
 
 export const RoundTransition = ({ completedRound, nextRoundName, nextRoundSlug }: RoundTransitionProps) => {
@@ -36,7 +36,7 @@ export const RoundTransition = ({ completedRound, nextRoundName, nextRoundSlug }
         // The admin has already started the next round!
         console.log(`✅ Admin has started ${nextRoundName}! Navigating...`);
         toast.success(`${nextRoundName} has started! Entering now...`);
-        
+
         // Fetch full session data and sync
         const { data: fullSession } = await supabase
           .from('exam_sessions')
@@ -106,12 +106,12 @@ export const RoundTransition = ({ completedRound, nextRoundName, nextRoundSlug }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-8 p-4 relative overflow-hidden">
-      
+
       {/* Background Effect */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-500/10 rounded-full blur-[80px] animate-pulse pointer-events-none" />
 
       {/* Success Icon */}
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="relative z-10 w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.2)]"
@@ -127,7 +127,7 @@ export const RoundTransition = ({ completedRound, nextRoundName, nextRoundSlug }
         <p className="text-slate-400">
           Great work! Your submission has been recorded.
         </p>
-        
+
         {/* Waiting Status */}
         <div className="bg-blue-900/20 border border-blue-500/30 p-5 rounded-lg flex items-center gap-4 text-left backdrop-blur-sm">
           <div className="p-3 bg-blue-500/10 rounded-full">
@@ -154,7 +154,7 @@ export const RoundTransition = ({ completedRound, nextRoundName, nextRoundSlug }
         </div>
 
         {/* Manual Refresh Button */}
-        <button 
+        <button
           onClick={handleManualRefresh}
           disabled={checking}
           className="flex items-center gap-2 px-5 py-2 mx-auto bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-full transition-all text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-50"

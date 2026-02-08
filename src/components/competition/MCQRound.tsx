@@ -283,7 +283,7 @@ export const MCQRound = () => {
           }, { onConflict: 'user_id' });
       }
 
-      console.log("✅ MCQ Submission Successful");
+      console.log(" MCQ Submission Successful");
 
       // 3. Update Leaderboard
       const { data: existing } = await supabase.from('leaderboard').select('*').eq('user_id', authUserId).maybeSingle();
