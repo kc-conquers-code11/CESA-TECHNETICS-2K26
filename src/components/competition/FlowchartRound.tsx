@@ -311,7 +311,7 @@ const FlowchartBuilder = () => {
     }
   }, [setNodes]);
 
-  //  DELETE FUNCTION
+  // ✅ DELETE FUNCTION
   const deleteSelected = useCallback(() => {
     const selectedNodes = getNodes().filter((node) => node.selected);
     const selectedEdges = getEdges().filter((edge) => edge.selected);
@@ -437,7 +437,7 @@ const FlowchartBuilder = () => {
             onDragOver={onDragOver}
             onNodeDoubleClick={onNodeDoubleClick}
             nodeTypes={nodeTypes}
-            deleteKeyCode={['Backspace', 'Delete']} //  Enable Keyboard Delete
+            deleteKeyCode={['Backspace', 'Delete']} // ✅ Enable Keyboard Delete
             fitView
             className="bg-black"
           >
