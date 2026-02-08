@@ -19,7 +19,19 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { Send, RotateCcw, CheckCircle2, Loader2, BrainCircuit, AlertCircle, MousePointer2, Save, Cloud } from 'lucide-react';
+import { 
+  Send, 
+  RotateCcw, 
+  CheckCircle2, 
+  Loader2, 
+  BrainCircuit, 
+  AlertCircle, 
+  MousePointer2, 
+  Save, 
+  Cloud, 
+  Trash2,
+  Workflow 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CompetitionTimer } from './CompetitionTimer';
 import { RoundTransition } from './RoundTransition';
@@ -69,12 +81,39 @@ const DecisionNode = ({ data }: any) => (
     </div>
     <Handle type="target" position={Position.Top} style={{ ...handleStyle, top: -4 }} />
     <Handle type="source" position={Position.Right} id="yes" style={{ ...handleStyle, right: -4 }} />
+    <div className="absolute -right-8 top-1/2 -translate-y-1/2 text-[10px] text-green-400 font-bold">Yes</div>
     <Handle type="source" position={Position.Bottom} id="no" style={{ ...handleStyle, bottom: -4 }} />
+    <div className="absolute bottom-[-18px] left-1/2 -translate-x-1/2 text-[10px] text-red-400 font-bold">No</div>
     <Handle type="source" position={Position.Left} style={{ ...handleStyle, left: -4 }} />
   </div>
 );
 
-const nodeTypes = { start: StartNode, end: EndNode, process: ProcessNode, decision: DecisionNode };
+const InputOutputNode = ({ data }: any) => (
+  <div className="relative px-4 py-3 bg-purple-900/40 border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)] text-purple-100 text-xs font-bold min-w-[120px] text-center" style={{ transform: 'skew(-20deg)' }}>
+    <div style={{ transform: 'skew(20deg)' }}>{data.label}</div>
+    <Handle type="target" position={Position.Top} style={{ ...handleStyle, transform: 'skew(20deg)' }} />
+    <Handle type="source" position={Position.Bottom} style={{ ...handleStyle, transform: 'skew(20deg)' }} />
+  </div>
+);
+
+const ConnectorNode = ({ data }: any) => (
+  <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-zinc-400 flex items-center justify-center shadow-sm hover:border-white transition-colors">
+    <span className="text-[10px] font-bold text-zinc-200">{data.label}</span>
+    <Handle type="target" position={Position.Top} style={handleStyle} />
+    <Handle type="source" position={Position.Bottom} style={handleStyle} />
+    <Handle type="source" position={Position.Left} style={handleStyle} />
+    <Handle type="source" position={Position.Right} style={handleStyle} />
+  </div>
+);
+
+const nodeTypes = { 
+  start: StartNode, 
+  end: EndNode, 
+  process: ProcessNode, 
+  decision: DecisionNode,
+  io: InputOutputNode,
+  connector: ConnectorNode
+};
 
 // --- SIDEBAR ITEM ---
 const SidebarItem = ({ type, label, colorClass }: { type: string, label: string, colorClass: string }) => {
@@ -89,7 +128,12 @@ const SidebarItem = ({ type, label, colorClass }: { type: string, label: string,
       onDragStart={(event) => onDragStart(event, type)}
       draggable
     >
-      <div className={cn("w-full h-8 border-2 rounded opacity-50", type === 'start' || type === 'end' ? 'rounded-full' : type === 'decision' ? 'rotate-45 scale-75 rounded-none' : 'rounded-md')} />
+      <div className={cn(
+        "w-full h-8 border-2 opacity-50",
+        type === 'start' || type === 'end' || type === 'connector' ? 'rounded-full' : 
+        type === 'decision' ? 'rotate-45 scale-75 rounded-none' : 
+        type === 'io' ? 'skew-x-[-20deg]' : 'rounded-md'
+      )} />
       <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
     </div>
   );
@@ -100,7 +144,7 @@ const FlowchartBuilder = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, toObject } = useReactFlow(); // toObject gets full JSON
+  const { screenToFlowPosition, toObject, getNodes, getEdges } = useReactFlow(); 
 
   const [activeProblem, setActiveProblem] = useState<FlowchartProblem | null>(null);
   const [loadingProblem, setLoadingProblem] = useState(true);
@@ -109,6 +153,7 @@ const FlowchartBuilder = () => {
   const [submitted, setSubmitted] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [aiFeedback, setAiFeedback] = useState<{ score: number } | null>(null);
+  const [roundDuration, setRoundDuration] = useState(20 * 60);
 
   const { completeRound, userId, startFlowchart, flowchartStartTime } = useCompetitionStore();
 
@@ -116,29 +161,54 @@ const FlowchartBuilder = () => {
   useEffect(() => {
     const initRound = async () => {
       try {
-        // Fetch Problem
-        const { data: problem } = await supabase.from('flowchart_problems').select('*').eq('is_active', true).limit(1).maybeSingle();
-        setActiveProblem(problem);
+        // Fetch Timer Config
+        const { data: config } = await supabase.from('game_config').select('value').eq('key', 'flowchart_duration').single();
+        if (config?.value) setRoundDuration(parseInt(config.value) * 60);
 
-        // Fetch Existing Draft (Restore State)
-        if (userId && problem) {
-          const { data: draft } = await supabase
+        // Fetch Assigned Problem (or assign new one)
+        // We use the submissions table to determine the assigned problem to ensure persistence
+        let problemData = null;
+
+        const { data: existingSub } = await supabase
             .from('flowchart_submissions')
-            .select('*')
+            .select('*, flowchart_problems(*)')
             .eq('user_id', userId)
-            .eq('problem_id', problem.id)
-            .single();
+            .maybeSingle();
 
-          if (draft && draft.nodes) {
-            // Restore Canvas
-            setNodes(draft.nodes || []);
-            setEdges(draft.edges || []);
-            if (draft.status === 'graded') {
-              setSubmitted(true); // Already finished
+        if (existingSub) {
+            // User already has a problem assigned
+            problemData = existingSub.flowchart_problems;
+            
+            // Restore Canvas State
+            if (existingSub.nodes) {
+                setNodes(existingSub.nodes);
+                setEdges(existingSub.edges);
             }
-            toast.success("Draft restored from server");
-          }
+            if (existingSub.status === 'graded') {
+                setSubmitted(true);
+            }
+            toast.success("Draft restored");
+        } else {
+            // New User: Assign a random problem
+            const { data: allProbs } = await supabase.from('flowchart_problems').select('*');
+            if (allProbs && allProbs.length > 0) {
+                const randomProb = allProbs[Math.floor(Math.random() * allProbs.length)];
+                problemData = randomProb;
+
+                // Initialize submission to lock this problem
+                await supabase.from('flowchart_submissions').insert({
+                    user_id: userId,
+                    problem_id: randomProb.id,
+                    nodes: [],
+                    edges: [],
+                    status: 'draft',
+                    updated_at: new Date().toISOString()
+                });
+            }
         }
+
+        setActiveProblem(problemData);
+
       } catch (err) {
         console.error("Init error:", err);
       } finally {
@@ -146,15 +216,14 @@ const FlowchartBuilder = () => {
       }
     };
 
-    initRound();
+    if (userId) initRound();
     if (!flowchartStartTime) startFlowchart();
   }, [startFlowchart, flowchartStartTime, userId, setNodes, setEdges]);
 
-  // 2. Save Logic (Fixed)
+  // 2. Save Logic
   const handleSaveDraft = useCallback(async (silent = false) => {
     if (!userId || !activeProblem) return;
-    
-    if (isSubmitting) return; // Don't save if submitting
+    if (isSubmitting) return; 
 
     if (!silent) setIsSaving(true);
 
@@ -171,25 +240,18 @@ const FlowchartBuilder = () => {
                 status: 'draft',
                 updated_at: new Date().toISOString()
             }, { 
-                onConflict: 'user_id,problem_id', // <--- SPACE REMOVED HERE (Critical)
+                onConflict: 'user_id,problem_id',
                 ignoreDuplicates: false 
             });
 
-        if (error) {
-            // Log full error object to verify structure
-            console.error("Supabase Error Details:", JSON.stringify(error, null, 2));
-            throw error;
-        }
+        if (error) throw error;
 
         setLastSaved(new Date());
         if (!silent) toast.success("Draft Saved");
 
     } catch (err: any) {
         console.error("Save Draft Failed:", err);
-        if (!silent) {
-            // Show exact error message from DB
-            toast.error(`Save Failed: ${err.message || err.details || "Unknown error"}`);
-        }
+        if (!silent) toast.error("Save Failed");
     } finally {
         if (!silent) setIsSaving(false);
     }
@@ -199,9 +261,9 @@ const FlowchartBuilder = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       if (nodes.length > 0) {
-        handleSaveDraft(true); // Silent save
+        handleSaveDraft(true); 
       }
-    }, 60000); // 1 Minute
+    }, 60000); 
 
     return () => clearInterval(timer);
   }, [handleSaveDraft, nodes]);
@@ -219,11 +281,17 @@ const FlowchartBuilder = () => {
       if (!type) return;
 
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      
+      let label = type.charAt(0).toUpperCase() + type.slice(1);
+      if (type === 'decision') label = '?';
+      if (type === 'io') label = 'Input/Output';
+      if (type === 'connector') label = 'A';
+
       const newNode: Node = {
         id: `node_${Date.now()}`,
         type,
         position,
-        data: { label: type === 'decision' ? '?' : type.charAt(0).toUpperCase() + type.slice(1) },
+        data: { label },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -243,7 +311,22 @@ const FlowchartBuilder = () => {
     }
   }, [setNodes]);
 
- // 5. Submit Logic (Fixed: Now handles Upsert correctly)
+  // ✅ DELETE FUNCTION
+  const deleteSelected = useCallback(() => {
+    const selectedNodes = getNodes().filter((node) => node.selected);
+    const selectedEdges = getEdges().filter((edge) => edge.selected);
+    
+    if (selectedNodes.length === 0 && selectedEdges.length === 0) {
+      toast.info("Select an element to delete");
+      return;
+    }
+
+    setNodes((nds) => nds.filter((node) => !node.selected));
+    setEdges((eds) => eds.filter((edge) => !edge.selected));
+    toast.success("Deleted");
+  }, [getNodes, getEdges, setNodes, setEdges]);
+
+  // 5. Submit Logic
   const handleSubmit = useCallback(async () => {
     if (!userId || !activeProblem) return;
     if (nodes.length === 0) return toast.error("Canvas is empty!");
@@ -252,7 +335,7 @@ const FlowchartBuilder = () => {
     const toastId = toast.loading("Analyzing Logic...");
 
     try {
-        // 1. Final Save to DB (UPSERT with onConflict)
+        // 1. Final Save to DB
         const flowData = toObject();
         
         const { data: submission, error: dbError } = await supabase
@@ -262,19 +345,15 @@ const FlowchartBuilder = () => {
                 problem_id: activeProblem.id,
                 nodes: flowData.nodes,
                 edges: flowData.edges,
-                status: 'pending', // Change status from 'draft' to 'pending'
+                status: 'pending', 
                 updated_at: new Date().toISOString()
             }, {
-                // 👇 YE LINE MISSING THI, ISLIYE 409 AA RAHA THA
                 onConflict: 'user_id,problem_id' 
             })
             .select()
             .single();
 
-        if (dbError) {
-            console.error("DB Upsert Error:", dbError);
-            throw new Error(`DB Error: ${dbError.message}`);
-        }
+        if (dbError) throw new Error(`DB Error: ${dbError.message}`);
 
         // 2. Call AI Evaluation
         try {
@@ -289,11 +368,8 @@ const FlowchartBuilder = () => {
 
         } catch (aiError) {
             console.warn("AI Skipped:", aiError);
-            toast.warning("AI busy. Sent for manual review.", { id: toastId });
-            // Fail-safe: Update status so user doesn't get stuck
-            await supabase.from('flowchart_submissions')
-                .update({ status: 'manual_review' })
-                .eq('id', submission.id);
+            toast.warning("Submitted for manual review.", { id: toastId });
+            await supabase.from('flowchart_submissions').update({ status: 'manual_review' }).eq('id', submission.id);
         }
 
         // 3. Move to Next Round
@@ -339,11 +415,13 @@ const FlowchartBuilder = () => {
         </div>
 
         {/* Drag Source Toolbar */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-xl flex flex-col gap-2 shadow-xl">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-xl flex flex-col gap-2 shadow-xl overflow-y-auto max-h-[60vh] custom-scrollbar">
           <div className="text-[10px] text-zinc-500 text-center font-bold mb-1">TOOLS</div>
           <SidebarItem type="start" label="Start" colorClass="border-green-500/50 text-green-500" />
+          <SidebarItem type="io" label="Input/Output" colorClass="border-purple-500/50 text-purple-500" />
           <SidebarItem type="process" label="Process" colorClass="border-blue-500/50 text-blue-500" />
           <SidebarItem type="decision" label="Decision" colorClass="border-yellow-500/50 text-yellow-500" />
+          <SidebarItem type="connector" label="Connector" colorClass="border-white/50 text-white" />
           <SidebarItem type="end" label="End" colorClass="border-red-500/50 text-red-500" />
         </div>
 
@@ -355,11 +433,11 @@ const FlowchartBuilder = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodeDoubleClick={onNodeDoubleClick}
             nodeTypes={nodeTypes}
+            deleteKeyCode={['Backspace', 'Delete']} // ✅ Enable Keyboard Delete
             fitView
             className="bg-black"
           >
@@ -372,6 +450,11 @@ const FlowchartBuilder = () => {
         {/* Bottom Bar */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-lg flex gap-4 shadow-xl z-10">
           <Button variant="ghost" size="sm" onClick={handleReset} className="text-zinc-400 hover:text-red-400 h-8 text-xs"><RotateCcw className="w-3 h-3 mr-2" /> Reset</Button>
+
+          {/* DELETE BUTTON */}
+          <Button variant="ghost" size="sm" onClick={deleteSelected} className="text-zinc-400 hover:text-red-400 h-8 text-xs border border-transparent hover:border-red-500/30">
+            <Trash2 className="w-3 h-3 mr-2" /> Delete
+          </Button>
 
           {/* MANUAL SAVE BUTTON */}
           <Button variant="secondary" size="sm" onClick={() => handleSaveDraft(false)} disabled={isSaving} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 h-8 text-xs border border-zinc-700">
@@ -388,7 +471,7 @@ const FlowchartBuilder = () => {
       {/* RIGHT: Requirements & Timer */}
       <div className="w-[280px] flex flex-col gap-3 shrink-0">
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <CompetitionTimer totalSeconds={45 * 60} onTimeUp={handleSubmit} />
+          <CompetitionTimer totalSeconds={roundDuration} onTimeUp={handleSubmit} />
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex-1 overflow-y-auto">
           <h3 className="text-xs font-bold text-blue-400 uppercase mb-3 flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5" /> Requirements</h3>
@@ -405,6 +488,7 @@ const FlowchartBuilder = () => {
               <li><strong>Drag</strong> shapes from left.</li>
               <li><strong>Connect</strong> dots for flow.</li>
               <li><strong>Double Click</strong> to edit text.</li>
+              <li><strong>Backspace</strong> to delete items.</li>
               <li><strong>Auto-saves</strong> every minute.</li>
             </ul>
           </div>

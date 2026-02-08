@@ -1,12 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+declare const Deno: any;
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request) => {
+//  2. Use Deno.serve instead of serve()
+Deno.serve(async (req: Request) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -37,36 +39,53 @@ serve(async (req: Request) => {
     // 3. Prepare Data for AI
     const nodes = record.nodes || [];
     const edges = record.edges || [];
-    
-    // Simplify for AI context window
-    const simpleNodes = nodes.map((n: any) => ({ id: n.id, text: n.data?.label, type: n.type }));
-    const simpleEdges = edges.map((e: any) => ({ from: e.source, to: e.target, label: e.label || "" }));
+
+    // Robust mapping for nodes/edges
+    const simpleNodes = nodes.map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      text: n.data?.label || n.data?.text || n.label || `[${n.type} Node]`
+    }));
+
+    const simpleEdges = edges.map((e: any) => ({
+      from: e.source,
+      to: e.target,
+      label: e.label || "connects to"
+    }));
 
     const prompt = `
-      Act as a strict Computer Science Professor. Evaluate this flowchart logic.
+      You are a Computer Science Professor grading a flowchart.
       
       PROBLEM:
-      "${record.flowchart_problems?.title}"
-      ${record.flowchart_problems?.description}
+      Title: "${record.flowchart_problems?.title}"
+      Description: ${record.flowchart_problems?.description}
       Requirements: ${JSON.stringify(record.flowchart_problems?.requirements)}
 
       STUDENT SUBMISSION:
       Nodes: ${JSON.stringify(simpleNodes)}
       Connections: ${JSON.stringify(simpleEdges)}
 
-      TASK:
-      1. Analyze if the flow logically solves the problem.
-      2. Check if decision nodes are handled correctly.
-      3. Assign a score (0-100).
-      4. Give a 1-line feedback string.
+      GRADING RUBRIC:
+      1. Logic Flow (40%): Does the start lead to end? Are steps logical?
+      2. Requirements (40%): Did they meet the specific requirements listed above?
+      3. Syntax (20%): Are Decision nodes used for branching (Yes/No)?
 
-      OUTPUT FORMAT (JSON ONLY, NO MARKDOWN):
-      { "score": number, "feedback": "string" }
+      INSTRUCTIONS:
+      - If the flowchart makes sense but has minor errors, give partial credit (e.g., 60-80).
+      - Only give 0 if the flowchart is empty or completely irrelevant.
+      - "Start" and "End" nodes are standard. Focus on the logic between them.
+
+      OUTPUT FORMAT (JSON ONLY):
+      {
+        "reasoning": "Explain your thinking here in 1 sentence.",
+        "score": number, 
+        "feedback": "A short, constructive feedback string for the student." 
+      }
     `;
 
-    // 4. Call Groq API (Llama 3.3)
+    // 4. Call Groq API
     console.log("⚡ Calling Groq Llama 3...");
-    
+
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -74,38 +93,63 @@ serve(async (req: Request) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', // Fast & Intelligent
+        model: 'llama-3.3-70b-versatile',
         messages: [
-            { role: 'system', content: 'You are a JSON-only API. Never output markdown or explanations.' },
-            { role: 'user', content: prompt }
+          {
+            role: 'system',
+            content: 'You are a helpful grading assistant. You ALWAYS output valid JSON. You never output markdown.'
+          },
+          { role: 'user', content: prompt }
         ],
-        temperature: 0.1, // Zero creativity, pure logic
-        response_format: { type: "json_object" } // Force JSON mode
+        temperature: 0.2,
+        response_format: { type: "json_object" }
       }),
     });
 
     if (!groqResponse.ok) {
-        const errText = await groqResponse.text();
-        throw new Error(`Groq API Error: ${errText}`);
+      const errText = await groqResponse.text();
+      throw new Error(`Groq API Error: ${errText}`);
     }
 
     const aiData = await groqResponse.json();
     const content = aiData.choices[0].message.content;
-    const result = JSON.parse(content); // Direct parse (Llama 3 handles JSON mode perfectly)
 
-    console.log("✅ Groq Result:", result);
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch (e) {
+      console.error("JSON Parse Error:", content);
+      throw new Error("AI returned invalid JSON");
+    }
+
+    console.log("✅ Final Grade:", result);
+
+    const finalScore = Math.round(result.score || 0);
 
     // 5. Update Database
     const { error: updateError } = await supabase
       .from('flowchart_submissions')
       .update({
-        ai_score: result.score,
-        ai_feedback: result.feedback,
+        ai_score: finalScore,
+        ai_feedback: result.feedback || "Evaluated.",
         status: 'graded'
       })
       .eq('id', submission_id);
 
-    if (updateError) throw new Error("DB Update Failed");
+    if (updateError) throw new Error("DB Update Failed: " + updateError.message);
+
+    // Update Leaderboard
+    const { data: lb } = await supabase.from('leaderboard').select('*').eq('user_id', record.user_id).single();
+    if (lb) {
+      const r1 = lb.round1_score || 0;
+      const r3 = lb.round3_score || 0;
+      await supabase.from('leaderboard').upsert({
+        user_id: record.user_id,
+        round2_score: finalScore,
+        overall_score: r1 + finalScore + r3,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: result }),
