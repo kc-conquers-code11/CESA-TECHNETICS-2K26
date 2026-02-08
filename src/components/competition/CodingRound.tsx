@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor from "@monaco-editor/react";
-import { Play, Send, RefreshCw, Terminal, CheckCircle2, XCircle, Code2, AlertCircle, Cpu, Lock, Unlock, AlertTriangle, Cloud, Loader2, Flag } from 'lucide-react';
+import { Play, Send, RefreshCw, Terminal, CheckCircle2, XCircle, Code2, AlertCircle, Cpu, Lock, Unlock, AlertTriangle, Cloud, Loader2, Flag, Save, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CompetitionTimer } from './CompetitionTimer';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabaseClient';
+import { startRoundTimer, endRoundTimer } from '@/lib/examTimer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,17 +84,19 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
   const [activeTab, setActiveTab] = useState<'case1' | 'case2'>('case1');
   
   const [isRunning, setIsRunning] = useState(false);
+  const [isAiRunning, setIsAiRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [submittedAll, setSubmittedAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [endTime, setEndTime] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [usedBackup, setUsedBackup] = useState(false); // Retained from File 1 (Hybrid Logic)
+  const [usedBackup, setUsedBackup] = useState(false); 
+
+  // Refs for safety
+  const isMounted = useRef(false);
 
   // Dialogs
-  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-  const [submitStats, setSubmitStats] = useState<{ score: number; details: string; outcomes: string[] } | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   // Derived Accessors
@@ -106,23 +109,38 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
 
   // --- 1. INIT ---
   useEffect(() => {
+    isMounted.current = true;
     const init = async () => {
       if (!userId) return;
       try {
         setLoading(true);
-        const { data: config } = await supabase.from('game_config').select('value').eq('key', 'coding_duration').single();
+        await startRoundTimer(userId, 'coding');
+        // 1. Fetch Config
+        const { data: config, error: configError } = await supabase.from('game_config').select('value').eq('key', 'coding_duration').single();
+        if (configError) throw configError;
         const DURATION_MINUTES = config?.value ? parseInt(config.value) : 45;
 
-        const { data: session } = await supabase.from('exam_sessions').select('coding_start_time').eq('user_id', userId).single();
+        // 2. Fetch Session & Time
+        const { data: session, error: sessionError } = await supabase.from('exam_sessions').select('coding_start_time').eq('user_id', userId).single();
+        if (sessionError && sessionError.code !== 'PGRST116') throw sessionError; // Ignore not found error, handle below
+
         let startTime = session?.coding_start_time;
 
         if (!startTime) {
           startTime = new Date().toISOString();
           await supabase.from('exam_sessions').upsert({ user_id: userId, coding_start_time: startTime }, { onConflict: 'user_id' });
+        } 
+        
+        
+        // Fix: Ensure valid date calculation to prevent Timer glitch
+        const end = new Date(new Date(startTime).getTime() + DURATION_MINUTES * 60000);
+        if (!isNaN(end.getTime())) {
+            setEndTime(end.toISOString());
         }
-        setEndTime(new Date(new Date(startTime).getTime() + DURATION_MINUTES * 60000).toISOString());
 
-        const { data: sub } = await supabase.from('coding_submissions').select('*').eq('user_id', userId).maybeSingle();
+        // 3. Fetch Submissions
+        const { data: sub, error: subError } = await supabase.from('coding_submissions').select('*').eq('user_id', userId).maybeSingle();
+        if (subError) console.error("Sub fetch error", subError); // Log but don't crash
 
         if (sub && sub.problem_set?.length > 0) {
             console.log("Restoring session...");
@@ -131,12 +149,14 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
             
             const hydratedSet = sub.problem_set.map((p: any) => ({
                 ...p,
-                details: problems?.find((d: any) => d.id === p.problem_id)
+                details: problems?.find((d: any) => d.id === p.problem_id),
+                runResult: p.runResult || null
             }));
             
             setProblemSet(hydratedSet);
+            // Strict check: Only finish if explicitly completed
             if (sub.status === 'completed') setSubmittedAll(true);
-            toast.success("Session Restored", { icon: <RefreshCw className="w-4 h-4" /> });
+            toast.success("Session Restored");
 
         } else {
             console.log("Fetching new questions...");
@@ -151,8 +171,8 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
             const p2 = medProbs[Math.floor(Math.random() * medProbs.length)] || allProblems[1];
 
             const newSet: ProblemState[] = [
-                { problem_id: p1.id, code: p1.starter_code, language: 'javascript', status: 'draft', details: p1 },
-                { problem_id: p2.id, code: p2.starter_code, language: 'javascript', status: 'draft', details: p2 }
+                { problem_id: p1.id, code: p1.starter_code, language: 'javascript', status: 'draft', details: p1, runResult: null },
+                { problem_id: p2.id, code: p2.starter_code, language: 'javascript', status: 'draft', details: p2, runResult: null }
             ];
             setProblemSet(newSet);
             const payload = newSet.map(({ details, ...rest }) => rest);
@@ -165,13 +185,15 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
             }, { onConflict: 'user_id' });
         }
       } catch (e) {
-        console.error(e);
-        toast.error("Failed to load round");
+        console.error("Init failed:", e);
+        // Do not block UI on socket error, allow retry
+        toast.error("Network issue. Retrying...", { duration: 2000 });
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     };
     init();
+    return () => { isMounted.current = false; };
   }, [userId]);
 
   // --- 2. UPDATERS ---
@@ -203,7 +225,7 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
             updated_at: new Date().toISOString()
         }).eq('user_id', userId);
         setLastSaved(new Date());
-        if (!silent) toast.success("Saved");
+        if (!silent) toast.success("Draft Saved");
     } catch (e) {
         console.error(e);
     } finally {
@@ -220,152 +242,160 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
     const handleVisibility = () => {
       if (document.hidden) {
         incrementTabSwitch();
-        toast.warning('Tab switch detected!', { icon: <AlertTriangle className="w-4 h-4 text-orange-500" /> });
+        // Do NOT submit round here. Just warn.
+        toast.warning('Tab switch detected! Focus on the exam.', { icon: <AlertTriangle className="w-4 h-4 text-orange-500" /> });
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [incrementTabSwitch]);
 
-  // --- 3. HYBRID EXECUTION LOGIC (JUDGE0 + 30s FALLBACK) ---
-  const executeResult = async (problemIndex: number, isSubmission: boolean) => {
-    const problem = problemSet[problemIndex];
-    if (!problem.details) return { status: 'Error', output: 'Problem Details Missing' };
-
-    // --- A. Define Judge0 Task ---
-    const primaryJudgePromise = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/execute`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    code: problem.code,
-                    language: problem.language,
-                    problemId: problem.problem_id,
-                    title: problem.details?.title,
-                    teamName: email || 'Anonymous',
-                    userId: userId,
-                    isSubmission,
-                    testCases: problem.details?.examples
-                }),
-            });
-
-            if (!response.ok) throw new Error("Network Error"); 
-
-            const initData = await response.json();
-            if (initData.error) throw new Error(initData.error || "Judge0 Error");
-
-            const jobId = initData.job_id;
-            if (!jobId) throw new Error("No Job ID returned");
-
-            // Polling Loop
-            for (let i = 0; i < 20; i++) { // ~40s Max (but handled by race)
-                await new Promise(r => setTimeout(r, 2000));
-                const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
-                if (statusRes.ok) {
-                    const statusData = await statusRes.json();
-                    if (['completed', 'success', 'error'].includes(statusData.status)) {
-                        // MERGED LOGIC FROM FILE 2: Recalculate status based on results
-                        if (statusData.results && statusData.results.length > 0) {
-                            const allPassed = statusData.results.every((r: any) => r.status === 'Accepted');
-                            statusData.status = allPassed ? 'Accepted' : 'Wrong Answer';
-                        }
-                        return statusData;
-                    }
-                }
-            }
-            throw new Error("Judge0 Loop Ended"); 
-        } catch (e) {
-            throw e; 
-        }
-    };
-
-    // --- B. Define AI Backup Task (From File 1) ---
-    const backupAiPromise = async () => {
-        setUsedBackup(true);
-        console.warn(`⚠️ Primary Judge Timeout (>30s). Activating Backup.`);
-        
-        const { data: submission } = await supabase.from('coding_submissions').select('id').eq('user_id', userId).single();
-        const { data: aiResult, error } = await supabase.functions.invoke('evaluate-code-backup', {
-            body: { 
-                submission_id: submission?.id,
-                target_problem_id: problem.problem_id,
-                current_code: problem.code,
-                current_lang: problem.language
-            }
+  // --- 3. EXECUTION LOGIC ---
+  
+  // A. Judge0 Logic
+  const executeJudge0 = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                code: activeProblemState.code,
+                language: activeProblemState.language,
+                problemId: activeProblemState.problem_id,
+                title: activeProblemDetails?.title,
+                teamName: email || 'Anonymous',
+                userId: userId,
+                isSubmission: false,
+                testCases: activeProblemDetails?.examples
+            }),
         });
 
-        if (error || !aiResult) throw new Error("AI Backup Failed");
+        if (!response.ok) throw new Error("Network Error"); 
 
-        return {
-            status: aiResult.score >= 50 ? 'Accepted' : 'Wrong Answer',
-            score: aiResult.score.toString(),
-            output: `[AI JUDGE] ${aiResult.feedback}\nComplexity: ${aiResult.complexity}`,
-            results: [
-                { status: aiResult.score > 0 ? 'Accepted' : 'Wrong Answer', input: 'AI Logic Check', expected: 'Pass', actual: aiResult.score > 0 ? 'Pass' : 'Fail' },
-                { status: aiResult.score === 100 ? 'Accepted' : 'Wrong Answer', input: 'Edge Cases', expected: 'Optimal', actual: aiResult.score === 100 ? 'Pass' : 'Fail' }
-            ]
-        };
-    };
+        const initData = await response.json();
+        if (initData.error) throw new Error(initData.error || "Judge0 Error");
 
-    // --- C. The Race (30s Strict) ---
-    try {
-        const result = await Promise.race([
-            primaryJudgePromise(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000)) // 30s Timeout
-        ]);
-        return result;
+        const jobId = initData.job_id;
+        if (!jobId) throw new Error("No Job ID returned");
 
-    } catch (error: any) {
-        // Handle Timeout or Network Failure by switching to Backup
-        if (error.message === "TIMEOUT" || error.message === "Network Error" || error.message === "Failed to fetch") {
-            toast.warning(`Primary Judge slow for Q${problemIndex + 1}. Switching to AI...`);
-            try {
-                return await backupAiPromise();
-            } catch (aiErr) {
-                console.error("Critical Failure:", aiErr);
-                return { status: 'Error', output: 'System Failure. Code Saved.', results: [], score: 0 };
+        // Polling
+        for (let i = 0; i < 20; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+            if (statusRes.ok) {
+                const statusData = await statusRes.json();
+                if (['completed', 'success', 'error'].includes(statusData.status)) {
+                    if (statusData.results && statusData.results.length > 0) {
+                        const allPassed = statusData.results.every((r: any) => r.status === 'Accepted');
+                        statusData.status = allPassed ? 'Accepted' : 'Wrong Answer';
+                    }
+                    return statusData;
+                }
             }
         }
-        // Standard Execution Error (e.g. Compilation Error from Judge0)
-        return { 
-            status: 'Error', 
-            output: `Execution Failed: ${error.message}`, 
-            results: [], 
-            score: 0 
-        };
+        throw new Error("Timeout");
+    } catch (e: any) {
+        throw e;
     }
   };
 
+  // B. AI Backup Logic
+  const executeAiBackup = async () => {
+    const { data: submission } = await supabase.from('coding_submissions').select('id').eq('user_id', userId).single();
+    const { data: aiResult, error } = await supabase.functions.invoke('evaluate-code-backup', {
+        body: { 
+            submission_id: submission?.id,
+            target_problem_id: activeProblemState.problem_id,
+            current_code: activeProblemState.code,
+            current_lang: activeProblemState.language
+        }
+    });
+
+    if (error || !aiResult) throw new Error("AI Failed");
+
+    return {
+        status: aiResult.score >= 50 ? 'Accepted' : 'Wrong Answer',
+        score: aiResult.score.toString(),
+        output: `[AI ANALYSIS]\nFeedback: ${aiResult.feedback}\nComplexity: ${aiResult.complexity}`,
+        results: [
+            { status: aiResult.score > 0 ? 'Accepted' : 'Wrong Answer', input: 'AI Logic Check', expected: 'Pass', actual: aiResult.score > 0 ? 'Pass' : 'Fail' },
+            { status: aiResult.score === 100 ? 'Accepted' : 'Wrong Answer', input: 'Edge Cases', expected: 'Optimal', actual: aiResult.score === 100 ? 'Pass' : 'Fail' }
+        ]
+    };
+  };
+
+  // --- BUTTON HANDLERS ---
+
+  // 1. RUN (Judge0)
   const handleRun = async () => {
     setIsRunning(true);
     setConsoleView('result');
     updateActiveState({ runResult: null });
 
-    const result = await executeResult(activeIndex, false); 
-    
-    updateActiveState({ runResult: result });
-    setIsRunning(false);
+    try {
+        // Strict 30s Timeout for Judge0 button
+        const result = await Promise.race([
+            executeJudge0(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000))
+        ]);
+        updateActiveState({ runResult: result });
+    } catch (error: any) {
+        toast.error(error.message === "TIMEOUT" ? "Judge0 Timed Out. Try AI Run." : "Execution Failed");
+        updateActiveState({ 
+            runResult: { 
+                status: 'Error', 
+                output: `Error: ${error.message}. \n\nTip: Try the "AI Run" button.`, 
+                results: [] 
+            } 
+        });
+    } finally {
+        setIsRunning(false);
+    }
   };
 
+  // 2. AI RUN
+  const handleAiRun = async () => {
+    setIsAiRunning(true);
+    setConsoleView('result');
+    updateActiveState({ runResult: null });
+    toast.info("Initializing AI Analysis...");
+
+    try {
+        const result = await executeAiBackup();
+        updateActiveState({ runResult: result });
+        toast.success("AI Analysis Complete");
+    } catch (error: any) {
+        toast.error("AI Analysis Failed");
+        updateActiveState({ 
+            runResult: { status: 'Error', output: `AI Error: ${error.message}`, results: [] } 
+        });
+    } finally {
+        setIsAiRunning(false);
+    }
+  };
+
+  // 3. LOCK
   const handleLockCurrent = async () => {
     if (isLocked) return;
     setIsSubmitting(true);
-    const toastId = toast.loading("Verifying & Locking...");
+    const toastId = toast.loading("Locking Solution...");
 
     try {
         await handleSave(true);
-        const result = await executeResult(activeIndex, true);
+        // Verify with Judge0 before lock
+        let result;
+        try {
+             result = await executeJudge0();
+        } catch {
+             result = await executeAiBackup(); // Fallback if Judge0 fails during lock
+        }
 
         updateActiveState({ runResult: result });
         
-        if (result.status !== 'Error') {
-            updateActiveState({ status: 'completed', isLocked: true });
-            toast.success(`Question Locked!`, { id: toastId });
-        } else {
-            toast.error("Execution Error - Cannot Lock", { id: toastId });
-        }
+        // Lock and mark completed
+        updateActiveState({ status: 'completed', isLocked: true });
         await handleSave(true);
+        toast.success(`Question Locked!`, { id: toastId });
 
     } catch (e) {
         toast.error("Locking Failed", { id: toastId });
@@ -374,6 +404,7 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
     }
   };
 
+  // 4. FINISH ROUND
   const handleFinishRound = async () => {
     setSubmittedAll(true);
     await supabase.from('coding_submissions').update({ status: 'completed' }).eq('user_id', userId);
@@ -381,9 +412,15 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
   };
 
   const handleTimeUp = useCallback(() => {
-    toast.error("Time Up! Submitting...");
-    handleFinishRound();
-  }, []);
+    // Safety check: Only auto-submit if loaded and time is genuinely likely up
+    if (!loading && endTime) {
+        const timeLeft = new Date(endTime).getTime() - Date.now();
+        if (timeLeft <= 1000) { // Tolerance
+            toast.error("Time Up! Submitting...");
+            handleFinishRound();
+        }
+    }
+  }, [loading, endTime]);
 
   const allProblemsLocked = problemSet.every(p => p.status === 'completed');
 
@@ -419,7 +456,6 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
           <div className="prose prose-invert prose-sm max-w-none">
             <p className="text-zinc-300 leading-7 whitespace-pre-wrap">{activeProblemDetails?.description}</p>
-            
             <h3 className="text-white font-bold mt-6 mb-3 flex items-center gap-2 text-sm"><Code2 className="w-4 h-4 text-blue-500" /> Examples</h3>
             <div className="space-y-4">
               {activeProblemDetails?.examples?.map((ex: any, i: number) => (
@@ -430,7 +466,6 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
                 </div>
               ))}
             </div>
-
             <h3 className="text-white font-bold mt-6 mb-3 flex items-center gap-2 text-sm"><AlertCircle className="w-4 h-4 text-yellow-500" /> Constraints</h3>
             <ul className="list-disc pl-4 space-y-1 text-zinc-400 text-xs font-mono">
               {activeProblemDetails?.constraints?.map((c: string, i: number) => <li key={i}>{c}</li>)}
@@ -493,11 +528,6 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
               theme="vs-dark"
               options={{ readOnly: isLocked, minimap: { enabled: false }, fontSize: 13, padding: { top: 16 }, fontFamily: "'JetBrains Mono', monospace", automaticLayout: true }}
             />
-            {usedBackup && (
-                <div className="absolute top-2 right-2 bg-purple-900/80 text-purple-200 border border-purple-500/50 px-3 py-1 rounded text-xs font-bold flex items-center gap-2 animate-pulse backdrop-blur z-10">
-                    <Cpu className="w-3 h-3" /> AI BACKUP ACTIVE
-                </div>
-            )}
           </div>
         </div>
 
@@ -508,12 +538,22 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
               <button onClick={() => setConsoleView('testcases')} className={cn("px-3 py-1 text-xs rounded-t-md font-medium border-b-2 transition-colors", consoleView === 'testcases' ? "text-white border-blue-500 bg-zinc-800/50" : "text-zinc-500 border-transparent")}>Test Cases</button>
               <button onClick={() => setConsoleView('result')} className={cn("px-3 py-1 text-xs rounded-t-md font-medium border-b-2 transition-colors", consoleView === 'result' ? "text-white border-green-500 bg-zinc-800/50" : "text-zinc-500 border-transparent")}>Run Result</button>
             </div>
+            
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" onClick={handleRun} disabled={isRunning || isSubmitting} className="h-6 text-xs bg-zinc-800 border-zinc-700">
+              <Button size="sm" variant="secondary" onClick={() => handleSave(false)} disabled={isSaving || isLocked} className="h-6 text-xs bg-zinc-800 border-zinc-700 text-zinc-400">
+                {isSaving ? <Loader2 className="w-3 h-3 animate-spin"/> : <Save className="w-3 h-3"/>}
+              </Button>
+
+              <Button size="sm" variant="secondary" onClick={handleRun} disabled={isRunning || isAiRunning || isLocked} className="h-6 text-xs bg-blue-900/30 text-blue-400 border border-blue-500/30 hover:bg-blue-900/50">
                 {isRunning ? <RefreshCw className="w-3 h-3 animate-spin mr-1"/> : <Play className="w-3 h-3 mr-1"/>} Run
               </Button>
+
+              <Button size="sm" variant="secondary" onClick={handleAiRun} disabled={isRunning || isAiRunning || isLocked} className="h-6 text-xs bg-purple-900/30 text-purple-400 border border-purple-500/30 hover:bg-purple-900/50">
+                {isAiRunning ? <Loader2 className="w-3 h-3 animate-spin mr-1"/> : <Zap className="w-3 h-3 mr-1"/>} AI Run
+              </Button>
+
               <Button size="sm" onClick={handleLockCurrent} disabled={isSubmitting || isRunning || isLocked} className={cn("h-6 text-xs border", isLocked ? "bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed" : "bg-green-700 border-green-600 text-white")}>
-                {isSubmitting ? <RefreshCw className="w-3 h-3 animate-spin mr-1"/> : <Lock className="w-3 h-3 mr-1"/>} {isLocked ? "Locked" : "Lock & Save"}
+                {isSubmitting ? <RefreshCw className="w-3 h-3 animate-spin mr-1"/> : <Lock className="w-3 h-3 mr-1"/>} {isLocked ? "Locked" : "Lock"}
               </Button>
             </div>
           </div>
@@ -530,11 +570,11 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
                   <div><div className="text-zinc-500 mb-1">Expected:</div><div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-green-400">{activeProblemDetails?.examples?.[activeTab === 'case1' ? 0 : 1]?.output || "N/A"}</div></div>
                   {runResult && (
                     <div>
-                        <div className="text-zinc-500 mb-1">Actual:</div>
+                        <div className="text-zinc-500 mb-1">Actual Output:</div>
                         <div className={cn("p-2 rounded border border-zinc-800 text-zinc-300", 
                             runResult.results?.[activeTab === 'case1' ? 0 : 1]?.status === 'Accepted' ? 'border-green-900/50 bg-green-950/10' : 'border-red-900/50 bg-red-950/10'
                         )}>
-                            {runResult.results?.[activeTab === 'case1' ? 0 : 1]?.actual || "N/A"}
+                            {runResult.results?.[activeTab === 'case1' ? 0 : 1]?.actual || "Not Run Yet"}
                         </div>
                     </div>
                   )}
@@ -542,11 +582,12 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
               </div>
             ) : (
               <div className="space-y-2">
-                {isRunning || isSubmitting ? (
-                    <div className="text-zinc-400 animate-pulse">Running Code on Judge0...</div>
+                {isRunning ? (
+                    <div className="text-blue-400 animate-pulse flex items-center gap-2"><RefreshCw className="w-3 h-3 animate-spin"/> Executing on Judge0...</div>
+                ) : isAiRunning ? (
+                    <div className="text-purple-400 animate-pulse flex items-center gap-2"><Cpu className="w-3 h-3 animate-bounce"/> AI Analyzing Logic...</div>
                 ) : runResult ? (
                   <div className="space-y-4 animate-in fade-in">
-                    {/* Status Header */}
                     <div className="flex items-center gap-4">
                       <div className={cn("text-lg font-bold", runResult.status === 'Accepted' ? "text-green-500" : "text-red-500")}>
                         {runResult.status}
@@ -554,7 +595,6 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
                       {runResult.score && <div className="px-2 py-0.5 bg-zinc-800 rounded text-zinc-300">Score: {runResult.score}/100</div>}
                     </div>
 
-                    {/* Detailed Test Results */}
                     {runResult.results && runResult.results.length > 0 && (
                         <div className="space-y-2">
                             <h4 className="text-zinc-500 font-bold mb-1">Test Case Breakdown:</h4>
@@ -576,10 +616,12 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
                         </div>
                     )}
 
-                    {/* Raw Output (For compilation errors) */}
-                    {runResult.output && !runResult.results?.length && (
-                        <div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-zinc-300 whitespace-pre-wrap font-mono text-xs">
-                            {runResult.output}
+                    {runResult.output && (
+                        <div className="mt-2">
+                            <div className="text-zinc-500 mb-1 text-[10px] uppercase">Output / Logs:</div>
+                            <div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-zinc-300 whitespace-pre-wrap font-mono text-xs max-h-[100px] overflow-y-auto">
+                                {runResult.output}
+                            </div>
                         </div>
                     )}
                   </div>
@@ -590,13 +632,12 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
         </div>
       </div>
 
-      {/* CONFIRM FINISH DIALOG */}
       <AlertDialog open={showFinishConfirm} onOpenChange={setShowFinishConfirm}>
         <AlertDialogContent className="bg-zinc-900 border-zinc-800 text-white">
             <AlertDialogHeader>
             <AlertDialogTitle className="text-red-500 flex items-center gap-2"><Flag className="w-5 h-5"/> Finish Round?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-                You have locked both answers. This will submit your final score and end the round. This action cannot be undone.
+                You have locked all answers. This will submit your final score and end the round.
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

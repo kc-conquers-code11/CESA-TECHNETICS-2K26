@@ -413,12 +413,17 @@ export default function AdminPanel() {
         } catch (e) { return <span className="text-zinc-600">--:--:--</span>; }
     };
 
-    const formatDuration = (seconds?: number) => {
-        if (typeof seconds !== 'number') return "--";
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return `${m}m ${s}s`;
-    };
+  const formatDuration = (seconds: any) => {
+  if (!seconds || isNaN(seconds)) return "0s";
+  const sec = parseInt(seconds);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+};
 
     const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
 
@@ -917,7 +922,7 @@ export default function AdminPanel() {
                                                 </span>
                                             </td>
 
-                                            {/* ✅ UPDATED: PARTICIPANT DETAILS (Name, Email, Team) */}
+                                            {/*  UPDATED: PARTICIPANT DETAILS (Name, Email, Team) */}
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-0.5">
                                                     {/* Full Name */}
@@ -959,14 +964,23 @@ export default function AdminPanel() {
                                                 </div>
                                             </td>
 
-                                            {/* TOTAL SCORE & TIME */}
-                                            <td className="p-4 text-right pr-6">
-                                                <div className="font-mono font-bold text-green-400 text-lg">{entry.overall_score}</div>
-                                                <div className="text-xs text-zinc-500 flex items-center justify-end gap-1">
-                                                    <FastForward className="w-3 h-3" />
-                                                    {entry.total_time_seconds ? formatDuration(entry.total_time_seconds) : "N/A"}
-                                                </div>
-                                            </td>
+                                          {/* TOTAL SCORE & TIME (TIE BREAKER) */}
+<td className="p-4 text-right pr-6">
+    <div className="flex flex-col items-end gap-0.5">
+        {/* Total Score */}
+        <div className="font-mono font-bold text-green-400 text-lg leading-none">
+            {entry.overall_score ?? 0}
+        </div>
+        
+        {/* Total Time Taken */}
+        <div className="flex items-center gap-1.5 text-xs text-zinc-500" title="Total Time Taken (Tie Breaker)">
+            <FastForward className="w-3 h-3 text-zinc-600" />
+            <span className="font-mono font-medium text-zinc-400">
+                {formatDuration(entry.total_time_seconds)}
+            </span>
+        </div>
+    </div>
+</td>
 
                                             {/* ACTIONS */}
                                             <td className="p-4 text-right">
