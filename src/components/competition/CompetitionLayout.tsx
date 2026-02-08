@@ -35,6 +35,37 @@ export const CompetitionLayout = () => {
   const [isPinned, setIsPinned] = useState(false);
   const isSidebarExpanded = timelineHover || isPinned;
 
+  // HELPER: Smart Sync that checks for Round Completion
+  const smartSync = async (sessionData: any) => {
+    if (!sessionData) return;
+
+    const round = sessionData.current_round;
+
+    // ✅ SAFETY CHECK: If round is missing, just sync and exit (prevents crash)
+    if (!round) {
+        syncSession(sessionData);
+        return;
+    }
+
+    // Check if user finished coding but DB still says 'coding' or 'waiting'
+    if (round === 'coding' || round.startsWith('waiting')) {
+      const { data: codingSub } = await supabase
+        .from('coding_submissions')
+        .select('status')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (codingSub?.status === 'completed') {
+        console.log("✅ Detected Coding Completion. Forcing 'completed' state.");
+        syncSession({ ...sessionData, current_round: 'completed' });
+        return;
+      }
+    }
+
+    // Default behavior
+    syncSession(sessionData);
+  };
+
   // 1. INITIAL DB SYNC
   useEffect(() => {
     const initialSync = async () => {
@@ -44,9 +75,7 @@ export const CompetitionLayout = () => {
       }
       try {
         const { data } = await supabase.from('exam_sessions').select('*').eq('user_id', userId).single();
-        if (data) {
-          syncSession(data);
-        }
+        if (data) await smartSync(data);
       } catch (err) {
         console.error("Sync failed:", err);
       } finally {
@@ -63,9 +92,9 @@ export const CompetitionLayout = () => {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${userId}` },
-        (payload) => {
+        async (payload) => {
           console.log("Realtime Update Recieved:", payload.new);
-          syncSession(payload.new);
+          await smartSync(payload.new);
         }
       )
       .subscribe();
@@ -75,22 +104,26 @@ export const CompetitionLayout = () => {
   // 3. BACKUP POLLING
   useEffect(() => {
     if (!userId) return;
-    // Poll more aggressively when in waiting state to catch admin transitions
+    
+    // Only poll if valid round state exists to avoid unnecessary calls
+    if (!currentRound) return;
+
     const shouldPoll = currentRound.includes('waiting') || competitionStatus === 'active';
     if (!shouldPoll) return;
 
     const interval = setInterval(async () => {
       const { data } = await supabase.from('exam_sessions').select('*').eq('user_id', userId).single();
       if (data) {
-        syncSession(data);
+        await smartSync(data);
       }
-    }, 3000); // 3s polling for responsiveness
+    }, 3000); 
     return () => clearInterval(interval);
   }, [currentRound, userId, syncSession, competitionStatus]);
 
   // 4. ANTI-CHEAT LOGIC
   useEffect(() => {
-    // Disable tab checks during waiting periods
+    if (!currentRound) return;
+
     const isSafeZone = currentRound === 'rules' || currentRound.includes('waiting') || currentRound === 'completed';
     if (isSafeZone || competitionStatus !== 'active') return;
 
@@ -110,11 +143,11 @@ export const CompetitionLayout = () => {
     try {
         const { data } = await supabase.from('exam_sessions').select('*').eq('user_id', userId).single();
         if (data) {
-            syncSession(data);
+            await smartSync(data);
             if(data.status === 'active') {
                 toast.success("Competition Resumed!");
             } else {
-                toast.info("Status is still frozen. Contact Admin.");
+                toast.info("Status refreshed. Still frozen.");
             }
         }
     } catch (error) {
@@ -125,9 +158,10 @@ export const CompetitionLayout = () => {
   };
 
   const renderRound = () => {
+    if (!currentRound) return <RulesPage />; // Fallback if null
+
     switch (currentRound) {
       case 'rules': return <RulesPage />;
-      //  Map all waiting states to WaitingArea
       case 'waiting': 
       case 'waiting_r2': 
       case 'waiting_r3': 

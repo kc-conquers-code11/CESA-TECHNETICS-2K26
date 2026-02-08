@@ -190,7 +190,7 @@ const AboutContent = () => (
         >
             <span className="opacity-50 group-hover:opacity-100 transition-opacity font-bold">&lt;/&gt;</span>
             <span className="relative">
-                Designed & Developed by Krishna Choudhary
+                Designed & Developed by KC
                 {/* Underline Animation */}
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-red-600 transition-all duration-300 group-hover:w-full group-hover:shadow-[0_0_10px_rgba(220,38,38,1)]"></span>
             </span>
