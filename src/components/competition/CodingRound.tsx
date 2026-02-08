@@ -89,6 +89,7 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
   const [loading, setLoading] = useState(true);
   const [endTime, setEndTime] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [usedBackup, setUsedBackup] = useState(false); // Retained from File 1 (Hybrid Logic)
 
   // Dialogs
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -226,53 +227,107 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [incrementTabSwitch]);
 
-  // --- 3. JUDGE0 EXECUTION ---
+  // --- 3. HYBRID EXECUTION LOGIC (JUDGE0 + 30s FALLBACK) ---
   const executeResult = async (problemIndex: number, isSubmission: boolean) => {
     const problem = problemSet[problemIndex];
     if (!problem.details) return { status: 'Error', output: 'Problem Details Missing' };
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/execute`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                code: problem.code,
-                language: problem.language,
-                problemId: problem.problem_id,
-                title: problem.details?.title,
-                teamName: email || 'Anonymous',
-                userId: userId,
-                isSubmission,
-                testCases: problem.details?.examples
-            }),
-        });
+    // --- A. Define Judge0 Task ---
+    const primaryJudgePromise = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: problem.code,
+                    language: problem.language,
+                    problemId: problem.problem_id,
+                    title: problem.details?.title,
+                    teamName: email || 'Anonymous',
+                    userId: userId,
+                    isSubmission,
+                    testCases: problem.details?.examples
+                }),
+            });
 
-        if (!response.ok) throw new Error("Network Error"); 
+            if (!response.ok) throw new Error("Network Error"); 
 
-        const initData = await response.json();
-        if (initData.error) throw new Error(initData.error || "Judge0 Error");
+            const initData = await response.json();
+            if (initData.error) throw new Error(initData.error || "Judge0 Error");
 
-        const jobId = initData.job_id;
-        if (!jobId) throw new Error("No Job ID returned");
+            const jobId = initData.job_id;
+            if (!jobId) throw new Error("No Job ID returned");
 
-        // Polling Loop
-        for (let i = 0; i < 20; i++) { // 40s
-            await new Promise(r => setTimeout(r, 2000));
-            const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
-            if (statusRes.ok) {
-                const statusData = await statusRes.json();
-                
-                // Wait for explicit completion
-                if (['completed', 'success', 'error'].includes(statusData.status)) {
-                    // Normalize Results: If completed but 'results' missing, assume pass/fail based on status
-                    return statusData;
+            // Polling Loop
+            for (let i = 0; i < 20; i++) { // ~40s Max (but handled by race)
+                await new Promise(r => setTimeout(r, 2000));
+                const statusRes = await fetch(`${API_BASE_URL}/api/status/${jobId}`);
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    if (['completed', 'success', 'error'].includes(statusData.status)) {
+                        // MERGED LOGIC FROM FILE 2: Recalculate status based on results
+                        if (statusData.results && statusData.results.length > 0) {
+                            const allPassed = statusData.results.every((r: any) => r.status === 'Accepted');
+                            statusData.status = allPassed ? 'Accepted' : 'Wrong Answer';
+                        }
+                        return statusData;
+                    }
                 }
             }
+            throw new Error("Judge0 Loop Ended"); 
+        } catch (e) {
+            throw e; 
         }
-        throw new Error("Judge0 Timeout");
+    };
+
+    // --- B. Define AI Backup Task (From File 1) ---
+    const backupAiPromise = async () => {
+        setUsedBackup(true);
+        console.warn(`⚠️ Primary Judge Timeout (>30s). Activating Backup.`);
+        
+        const { data: submission } = await supabase.from('coding_submissions').select('id').eq('user_id', userId).single();
+        const { data: aiResult, error } = await supabase.functions.invoke('evaluate-code-backup', {
+            body: { 
+                submission_id: submission?.id,
+                target_problem_id: problem.problem_id,
+                current_code: problem.code,
+                current_lang: problem.language
+            }
+        });
+
+        if (error || !aiResult) throw new Error("AI Backup Failed");
+
+        return {
+            status: aiResult.score >= 50 ? 'Accepted' : 'Wrong Answer',
+            score: aiResult.score.toString(),
+            output: `[AI JUDGE] ${aiResult.feedback}\nComplexity: ${aiResult.complexity}`,
+            results: [
+                { status: aiResult.score > 0 ? 'Accepted' : 'Wrong Answer', input: 'AI Logic Check', expected: 'Pass', actual: aiResult.score > 0 ? 'Pass' : 'Fail' },
+                { status: aiResult.score === 100 ? 'Accepted' : 'Wrong Answer', input: 'Edge Cases', expected: 'Optimal', actual: aiResult.score === 100 ? 'Pass' : 'Fail' }
+            ]
+        };
+    };
+
+    // --- C. The Race (30s Strict) ---
+    try {
+        const result = await Promise.race([
+            primaryJudgePromise(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("TIMEOUT")), 30000)) // 30s Timeout
+        ]);
+        return result;
 
     } catch (error: any) {
-        console.error("Execution Failed:", error);
+        // Handle Timeout or Network Failure by switching to Backup
+        if (error.message === "TIMEOUT" || error.message === "Network Error" || error.message === "Failed to fetch") {
+            toast.warning(`Primary Judge slow for Q${problemIndex + 1}. Switching to AI...`);
+            try {
+                return await backupAiPromise();
+            } catch (aiErr) {
+                console.error("Critical Failure:", aiErr);
+                return { status: 'Error', output: 'System Failure. Code Saved.', results: [], score: 0 };
+            }
+        }
+        // Standard Execution Error (e.g. Compilation Error from Judge0)
         return { 
             status: 'Error', 
             output: `Execution Failed: ${error.message}`, 
@@ -438,6 +493,11 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
               theme="vs-dark"
               options={{ readOnly: isLocked, minimap: { enabled: false }, fontSize: 13, padding: { top: 16 }, fontFamily: "'JetBrains Mono', monospace", automaticLayout: true }}
             />
+            {usedBackup && (
+                <div className="absolute top-2 right-2 bg-purple-900/80 text-purple-200 border border-purple-500/50 px-3 py-1 rounded text-xs font-bold flex items-center gap-2 animate-pulse backdrop-blur z-10">
+                    <Cpu className="w-3 h-3" /> AI BACKUP ACTIVE
+                </div>
+            )}
           </div>
         </div>
 
@@ -468,6 +528,16 @@ export const CodingRound = ({ isSidebarExpanded = false }: { isSidebarExpanded?:
                 <div className="space-y-4">
                   <div><div className="text-zinc-500 mb-1">Input:</div><div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-zinc-300">{activeProblemDetails?.examples?.[activeTab === 'case1' ? 0 : 1]?.input || "N/A"}</div></div>
                   <div><div className="text-zinc-500 mb-1">Expected:</div><div className="bg-zinc-950 p-2 rounded border border-zinc-800 text-green-400">{activeProblemDetails?.examples?.[activeTab === 'case1' ? 0 : 1]?.output || "N/A"}</div></div>
+                  {runResult && (
+                    <div>
+                        <div className="text-zinc-500 mb-1">Actual:</div>
+                        <div className={cn("p-2 rounded border border-zinc-800 text-zinc-300", 
+                            runResult.results?.[activeTab === 'case1' ? 0 : 1]?.status === 'Accepted' ? 'border-green-900/50 bg-green-950/10' : 'border-red-900/50 bg-red-950/10'
+                        )}>
+                            {runResult.results?.[activeTab === 'case1' ? 0 : 1]?.actual || "N/A"}
+                        </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

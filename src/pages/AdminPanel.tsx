@@ -340,15 +340,18 @@ export default function AdminPanel() {
             if (fData) setFlowchartProblems(fData);
 
             // Fetch Leaderboard
-            const { data: lData } = await supabase.from('leaderboard').select('*');
+            const { data: lbData } = await supabase
+                .from('leaderboard')
+                .select('*, profiles(full_name, team_name, email)')
+                .order('overall_score', { ascending: false });
 
             // Robustly fetch submission details
             const { data: mcqSubs } = await supabase.from('mcq_submissions').select('user_id, updated_at, created_at');
             const { data: flowSubs } = await supabase.from('flowchart_submissions').select('user_id, updated_at, created_at');
             const { data: codeSubs } = await supabase.from('coding_submissions').select('user_id, updated_at, created_at');
 
-            if (lData && users) {
-                const enhancedData = lData.map(entry => {
+            if (lbData && users) {
+                const enhancedData = lbData.map(entry => {
                     const user = users.find(u => u.user_id === entry.user_id);
 
                     const mcqSub = mcqSubs?.find(s => s.user_id === entry.user_id);
@@ -879,15 +882,20 @@ export default function AdminPanel() {
                 {activeTab === 'leaderboard' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2"><Trophy className="w-6 h-6 text-yellow-500" /> Live Leaderboard</h2>
-                            <Button onClick={fetchData} variant="outline" size="sm" className="h-8 gap-2"><RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} /> Refresh</Button>
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Trophy className="w-6 h-6 text-yellow-500" /> Live Leaderboard
+                            </h2>
+                            <Button onClick={fetchData} variant="outline" size="sm" className="h-8 gap-2">
+                                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} /> Refresh
+                            </Button>
                         </div>
+
                         <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl overflow-hidden shadow-xl">
                             <table className="w-full text-left text-sm text-zinc-400">
                                 <thead className="bg-black/40 uppercase text-[11px] font-bold text-zinc-500 border-b border-zinc-800 tracking-wider">
                                     <tr>
                                         <th className="p-4 pl-6">Rank</th>
-                                        <th className="p-4">Participant</th>
+                                        <th className="p-4">Participant Details</th> {/* Updated Header */}
                                         <th className="p-4 text-center">R1 Score</th>
                                         <th className="p-4 text-center">R2 Score</th>
                                         <th className="p-4 text-center">R3 Score</th>
@@ -897,40 +905,94 @@ export default function AdminPanel() {
                                 </thead>
                                 <tbody className="divide-y divide-zinc-800/50">
                                     {leaderboardData.map((entry, i) => (
-                                        <tr key={entry.id} className="hover:bg-white/5 transition-colors">
+                                        <tr key={entry.id} className="hover:bg-white/5 transition-colors group">
+
+                                            {/* RANK */}
                                             <td className="p-4 pl-6">
-                                                <span className={cn("text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold", i < 3 ? "bg-yellow-500 text-black" : "bg-zinc-800 text-zinc-500")}>{i + 1}</span>
-                                            </td>
-                                            <td className="p-4 font-medium text-white">
-                                                <div><p className="text-sm font-bold text-zinc-200">{entry.user_email}</p><p className="font-mono text-[10px] text-zinc-600">{entry.user_id.slice(0, 8)}</p></div>
-                                            </td>
-
-                                            {/* Round Scores with ACTUAL SUBMISSION TIME */}
-                                            <td className="p-4 text-center">
-                                                <div className="font-mono text-zinc-300">{entry.round1_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round1_time)}</div>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <div className="font-mono text-zinc-300">{entry.round2_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round2_time)}</div>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <div className="font-mono text-zinc-300">{entry.round3_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round3_time)}</div>
+                                                <span className={cn(
+                                                    "text-xs w-6 h-6 flex items-center justify-center rounded-full font-bold",
+                                                    i < 3 ? "bg-yellow-500 text-black shadow-[0_0_10px_rgba(234,179,8,0.5)]" : "bg-zinc-800 text-zinc-500"
+                                                )}>
+                                                    {i + 1}
+                                                </span>
                                             </td>
 
-                                            {/* Total Score & Time */}
-                                            <td className="p-4 text-right pr-6">
-                                                <div className="font-mono font-bold text-green-400 text-lg">{entry.overall_score}</div>
-                                                <div className="text-xs text-zinc-500 flex items-center justify-end gap-1">
-                                                    <FastForward className="w-3 h-3" /> {entry.total_time_seconds ? formatDuration(entry.total_time_seconds) : "N/A"}
+                                            {/* ✅ UPDATED: PARTICIPANT DETAILS (Name, Email, Team) */}
+                                            <td className="p-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    {/* Full Name */}
+                                                    <span className="text-base font-bold text-white group-hover:text-red-400 transition-colors">
+                                                        {/* @ts-ignore - Ensure fetch query includes profiles join */}
+                                                        {entry.profiles?.full_name || "Unknown User"}
+                                                    </span>
+
+                                                    {/* Email */}
+                                                    <span className="text-xs text-zinc-500 flex items-center gap-1">
+                                                        {entry.user_email}
+                                                    </span>
+
+                                                    {/* Team Name Badge */}
+                                                    <span className="inline-flex mt-1 self-start items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wide">
+                                                        {/* @ts-ignore */}
+                                                        {entry.profiles?.team_name || "NO TEAM"}
+                                                    </span>
                                                 </div>
                                             </td>
 
-                                            <td className="p-4 text-right"><Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" onClick={() => { const p = participants.find(part => part.user_id === entry.user_id); if (p) inspectUser(p); else toast.error("User details not found"); }}><Eye className="w-4 h-4" /></Button></td>
+                                            {/* ROUND SCORES */}
+                                            <td className="p-4 text-center">
+                                                <div className="font-mono text-zinc-300">{entry.round1_score}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                                    <Clock className="w-2 h-2" /> {formatTime(entry.round1_time)}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="font-mono text-zinc-300">{entry.round2_score}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                                    <Clock className="w-2 h-2" /> {formatTime(entry.round2_time)}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="font-mono text-zinc-300">{entry.round3_score}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                                    <Clock className="w-2 h-2" /> {formatTime(entry.round3_time)}
+                                                </div>
+                                            </td>
+
+                                            {/* TOTAL SCORE & TIME */}
+                                            <td className="p-4 text-right pr-6">
+                                                <div className="font-mono font-bold text-green-400 text-lg">{entry.overall_score}</div>
+                                                <div className="text-xs text-zinc-500 flex items-center justify-end gap-1">
+                                                    <FastForward className="w-3 h-3" />
+                                                    {entry.total_time_seconds ? formatDuration(entry.total_time_seconds) : "N/A"}
+                                                </div>
+                                            </td>
+
+                                            {/* ACTIONS */}
+                                            <td className="p-4 text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                                                    onClick={() => {
+                                                        const p = participants.find(part => part.user_id === entry.user_id);
+                                                        if (p) inspectUser(p);
+                                                        else toast.error("User details not found");
+                                                    }}
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+                                            </td>
                                         </tr>
                                     ))}
-                                    {leaderboardData.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-zinc-500">No scores yet</td></tr>}
+
+                                    {leaderboardData.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="p-12 text-center text-zinc-500 italic">
+                                                No scores recorded yet. Waiting for participants...
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
