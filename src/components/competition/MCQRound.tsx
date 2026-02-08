@@ -27,6 +27,7 @@ export const MCQRound = () => {
   const [submitted, setSubmitted] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [roundDuration, setRoundDuration] = useState(20 * 60); // Default 20 mins
 
   // Store hooks
   const {
@@ -40,76 +41,111 @@ export const MCQRound = () => {
 
   const currentQuestion = questions[currentIndex];
 
-  // 0. Fetch and Randomize Questions
+  // 0. Fetch Questions (Randomized & Persisted) & Timer Config
   useEffect(() => {
-    const fetchQuestions = async () => {
-      // Ensure we have a user ID before fetching to avoid key issues
+    const initRound = async () => {
+      // 1. Fetch Timer Config
+      try {
+        const { data: config } = await supabase
+          .from('game_config')
+          .select('value')
+          .eq('key', 'mcq_duration')
+          .single();
+        
+        if (config?.value) {
+          setRoundDuration(parseInt(config.value) * 60);
+        }
+      } catch (e) {
+        console.warn("Could not load timer config, using default.");
+      }
+
+      // 2. Fetch User & Questions
       const { data: { user } } = await supabase.auth.getUser();
       const currentUserId = user?.id || userId;
 
       if (!currentUserId) return;
 
       try {
-        // Fetch ALL questions for the round
-        const { data, error } = await supabase
-          .from('questions')
-          .select('*')
-          .eq('round_id', 'mcq');
+        setLoadingQuestions(true);
 
-        if (error) throw error;
+        // A. Check for existing assigned questions in DB
+        const { data: existingSub } = await supabase
+          .from('mcq_submissions')
+          .select('question_set, answers') 
+          .eq('user_id', currentUserId)
+          .maybeSingle();
 
-        if (data && data.length > 0) {
-          // 1. Parse Options (Handle JSON string or Array)
-          const parsedData = data.map((q: any) => {
-            let parsedOptions = q.options;
-            if (typeof q.options === 'string') {
-              try {
-                parsedOptions = JSON.parse(q.options);
-              } catch (e) {
-                console.error("Failed to parse options for question", q.id, e);
-                parsedOptions = [];
-              }
-            }
-            return { ...q, options: parsedOptions };
-          });
+        let assignedIds: string[] = [];
 
-          // 2. Random Selection Logic (10 Questions) with Persistence
-          const STORAGE_KEY = `mcq_assigned_${currentUserId}`;
-          const stored = localStorage.getItem(STORAGE_KEY);
+        if (existingSub && existingSub.question_set && existingSub.question_set.length > 0) {
+          // Case 1: Returning User -> Load previously assigned questions
+          console.log("Restoring assigned MCQ set...");
+          assignedIds = existingSub.question_set;
           
-          let selectedQuestions: Question[] = [];
-
-          if (stored) {
-             try {
-                 const storedIds = JSON.parse(stored);
-                 // Restore questions based on stored IDs to maintain order/selection on refresh
-                 selectedQuestions = storedIds
-                    .map((id: string) => parsedData.find((q: any) => q.id === id))
-                    .filter(Boolean); // Remove undefined if a question was deleted from DB
-             } catch (e) {
-                 console.error("Error parsing stored questions", e);
-             }
+          // Restore previous answers if they exist
+          if (existingSub.answers) {
+             setAnswers(existingSub.answers);
           }
 
-          // If no valid stored session, generate new random set
-          if (selectedQuestions.length === 0) {
-             // Fisher-Yates Shuffle
-             const shuffled = [...parsedData];
-             for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-             }
-             // Slice first 10
-             selectedQuestions = shuffled.slice(0, 10);
-             
-             // Save to local storage
-             localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedQuestions.map(q => q.id)));
-          }
-
-          setQuestions(selectedQuestions);
         } else {
-          toast.error('No MCQ questions found in database.');
+          // Case 2: New User -> Generate Random Set of 10
+          console.log("Generating new MCQ set...");
+          
+          // Fetch ALL MCQ IDs available in the system
+          const { data: allQuestions } = await supabase
+            .from('questions')
+            .select('id')
+            .eq('round_id', 'mcq');
+
+          if (!allQuestions || allQuestions.length === 0) {
+            toast.error('No MCQ questions found in database.');
+            setLoadingQuestions(false);
+            return;
+          }
+
+          // Shuffle and Pick 10
+          const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+          const selected = shuffled.slice(0, 10);
+          assignedIds = selected.map(q => q.id);
+
+          // SAVE THIS SET TO DB IMMEDIATELY (Persistence)
+          await supabase.from('mcq_submissions').upsert({
+            user_id: currentUserId,
+            question_set: assignedIds, // This locks these 10 questions for this user
+            score: 0, 
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
         }
+
+        // B. Fetch Full Question Details for the assigned IDs
+        if (assignedIds.length > 0) {
+          const { data: fullQuestions, error } = await supabase
+            .from('questions')
+            .select('*')
+            .in('id', assignedIds);
+
+          if (error) throw error;
+
+          if (fullQuestions) {
+            // Parse options if they are stored as JSON strings
+            const parsedData = fullQuestions.map((q: any) => {
+              let parsedOptions = q.options;
+              if (typeof q.options === 'string') {
+                try { parsedOptions = JSON.parse(q.options); } catch (e) { parsedOptions = []; }
+              }
+              return { ...q, options: parsedOptions };
+            });
+            
+            // Optional: Sort questions to ensure consistent order (e.g. by ID or shuffled order)
+            // Here we map them back to the order of assignedIds to maintain the shuffled order
+            const orderedQuestions = assignedIds
+                .map(id => parsedData.find(q => q.id === id))
+                .filter(q => q !== undefined) as Question[];
+
+            setQuestions(orderedQuestions);
+          }
+        }
+
       } catch (err) {
         console.error('Failed to fetch questions:', err);
         toast.error('Failed to load questions. Please refresh.');
@@ -118,10 +154,10 @@ export const MCQRound = () => {
       }
     };
 
-    fetchQuestions();
+    initRound();
   }, [userId]);
 
-  // 1. Start timer on mount
+  // 1. Start timer on mount (if not already started)
   useEffect(() => {
     if (!mcqStartTime) {
       startMCQ();
@@ -195,7 +231,10 @@ export const MCQRound = () => {
     let score = 0;
     questions.forEach(q => {
       const userAnswers = answers[q.id] || [];
+      // Note: 'correct_answer' in DB is the string value (e.g., "5 hours")
+      // We need to find which index that corresponds to in q.options
       const correctOptionIndex = q.options.findIndex(opt => opt === q.correct_answer);
+
       if (correctOptionIndex !== -1 && userAnswers.includes(correctOptionIndex)) {
         score += (q.points || 10);
       }
@@ -221,31 +260,27 @@ export const MCQRound = () => {
       }, { onConflict: 'id' });
 
       // 2. Submit MCQ Data
-      // Payload preparation
-      const submissionPayload = {
-          user_id: authUserId,
-          score: score,
-          answers: answers, // Supabase client auto-converts this to JSONB
-          updated_at: timestamp
-      };
-
-      // Try UPSERT first (requires UNIQUE constraint on user_id)
-      const { error: upsertError } = await supabase
+      // IMPORTANT: We use UPDATE to preserve the 'question_set' we saved earlier
+      const { error: updateError } = await supabase
           .from('mcq_submissions')
-          .upsert(submissionPayload, { onConflict: 'user_id' });
+          .update({
+              score: score,
+              answers: answers, 
+              updated_at: timestamp
+          })
+          .eq('user_id', authUserId);
 
-      if (upsertError) {
-          console.error("⚠️ Upsert Failed (likely missing unique constraint). Trying INSERT...", upsertError.message);
-          
-          // Fallback: Try simple INSERT if upsert failed
-          // Note: This might duplicate data if run twice, but it saves the exam.
-          const { error: insertError } = await supabase
-            .from('mcq_submissions')
-            .insert([submissionPayload]);
-            
-          if (insertError) {
-             throw insertError; // Throw real error if both fail
-          }
+      // Fallback: If record somehow missing, insert it (but try to preserve current Qs if we have them)
+      if (updateError) {
+          console.error("Update failed, trying upsert", updateError);
+          const assignedIds = questions.map(q => q.id); // Grab current question IDs
+          await supabase.from('mcq_submissions').upsert({
+             user_id: authUserId,
+             question_set: assignedIds,
+             score: score,
+             answers: answers,
+             updated_at: timestamp
+          }, { onConflict: 'user_id' });
       }
 
       console.log("✅ MCQ Submission Successful");
@@ -264,11 +299,9 @@ export const MCQRound = () => {
 
     } catch (err: any) {
       console.error("❌ CRITICAL SUBMISSION ERROR:", err.message || err);
-      toast.error(`Submission Issue: ${err.message || "Please take a screenshot and contact admin"}`);
-      // We do NOT return here; we allow the transition to happen so the user isn't stuck.
+      toast.error(`Submission Issue: ${err.message || "Please contact admin"}`);
     }
 
-    // Always transition user to next round even if DB glitch occurs (logs are saved in localStorage usually as backup)
     setTimeout(() => {
       setSubmitted(true);
       setIsSubmitting(false);
@@ -290,19 +323,17 @@ export const MCQRound = () => {
     />;
   }
 
-  // Loading State
   if (loadingQuestions) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-zinc-400">Loading questions...</p>
+          <p className="text-zinc-400">Allocating your unique question set...</p>
         </div>
       </div>
     );
   }
 
-  // No Questions State
   if (questions.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -443,13 +474,12 @@ export const MCQRound = () => {
 
       {/* Sidebar */}
       <div className="space-y-4">
-        {/* Timer */}
+        {/* Dynamic Timer */}
         <CompetitionTimer
-          totalSeconds={30 * 60}
+          totalSeconds={roundDuration}
           onTimeUp={handleTimeUp}
         />
 
-        {/* Progress Card */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 backdrop-blur-md">
           <h3 className="text-sm font-semibold mb-3 text-zinc-400">Progress</h3>
           <div className="space-y-2">
@@ -466,7 +496,6 @@ export const MCQRound = () => {
           </div>
         </div>
 
-        {/* Question Navigator */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 backdrop-blur-md">
           <h3 className="text-sm font-semibold mb-3 text-zinc-400">Navigator</h3>
           <div className="flex flex-wrap gap-2">

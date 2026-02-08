@@ -64,6 +64,7 @@ export const CompetitionLayout = () => {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'exam_sessions', filter: `user_id=eq.${userId}` },
         (payload) => {
+          console.log("Realtime Update Recieved:", payload.new);
           syncSession(payload.new);
         }
       )
@@ -74,7 +75,8 @@ export const CompetitionLayout = () => {
   // 3. BACKUP POLLING
   useEffect(() => {
     if (!userId) return;
-    const shouldPoll = currentRound === 'waiting' || competitionStatus === 'active';
+    // Poll more aggressively when in waiting state to catch admin transitions
+    const shouldPoll = currentRound.includes('waiting') || competitionStatus === 'active';
     if (!shouldPoll) return;
 
     const interval = setInterval(async () => {
@@ -82,13 +84,14 @@ export const CompetitionLayout = () => {
       if (data) {
         syncSession(data);
       }
-    }, 4000);
+    }, 3000); // 3s polling for responsiveness
     return () => clearInterval(interval);
   }, [currentRound, userId, syncSession, competitionStatus]);
 
   // 4. ANTI-CHEAT LOGIC
   useEffect(() => {
-    const isSafeZone = currentRound === 'rules' || currentRound === 'waiting' || currentRound === 'completed';
+    // Disable tab checks during waiting periods
+    const isSafeZone = currentRound === 'rules' || currentRound.includes('waiting') || currentRound === 'completed';
     if (isSafeZone || competitionStatus !== 'active') return;
 
     const handleVisibilityChange = () => {
@@ -124,7 +127,11 @@ export const CompetitionLayout = () => {
   const renderRound = () => {
     switch (currentRound) {
       case 'rules': return <RulesPage />;
-      case 'waiting': return <WaitingArea />;
+      //  Map all waiting states to WaitingArea
+      case 'waiting': 
+      case 'waiting_r2': 
+      case 'waiting_r3': 
+        return <WaitingArea />;
       case 'mcq': return <MCQRound />;
       case 'flowchart': return <FlowchartRound />;
       case 'coding': return <CodingRound isSidebarExpanded={isSidebarExpanded} />;
@@ -189,7 +196,6 @@ export const CompetitionLayout = () => {
   }
 
   return (
-    // ✅ FIX: 'fixed inset-0' locks the viewport
     <div className="fixed inset-0 flex flex-col bg-black text-white selection:bg-indigo-500/30 overflow-hidden">
       <div className="absolute inset-0 z-0 pointer-events-none">
         <AnimatedBackground />
@@ -199,7 +205,6 @@ export const CompetitionLayout = () => {
         <CompetitionHeader />
       </div>
 
-      {/* ✅ FIX: 'min-h-0' is critical here to allow flex child scrolling */}
       <main className="relative z-10 flex-1 flex min-h-0 overflow-hidden m-4 gap-4 transition-all duration-500">
         {/* SIDEBAR */}
         <div className="hidden lg:block h-full shrink-0">
@@ -261,7 +266,7 @@ export const CompetitionLayout = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.99 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="h-full w-full relative" // Added relative for child absolute positioning
+              className="h-full w-full relative" 
             >
               {renderRound()}
             </motion.div>

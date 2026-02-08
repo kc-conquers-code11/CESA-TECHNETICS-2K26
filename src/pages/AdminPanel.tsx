@@ -1,21 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import ReactFlow, { 
-    Background, 
-    Controls, 
+import ReactFlow, {
+    Background,
+    Controls,
     ReactFlowProvider,
     Handle,
     Position
 } from 'reactflow';
-import 'reactflow/dist/style.css'; 
+import 'reactflow/dist/style.css';
 
 import {
     Shield, RefreshCw, Play, Ban, Search,
     Plus, Trash2, AlertTriangle, LogOut,
     Activity, Workflow, CheckCircle, CheckCircle2, Eye, X, Code, Trophy,
     ListChecks, Clock, FastForward, Settings, Save, Maximize2, BookOpen, Database,
-    Cpu, 
+    Cpu,
     Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,35 +30,35 @@ const ADMIN_EMAILS = ["admin1@strangertech.in", "kc@strangertech.in", "admin@ces
 
 // --- FLOWCHART NODE TYPES ---
 const StartNode = ({ data }: any) => (
-  <div className="w-[100px] h-[50px] rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center text-xs font-bold text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-    {data.label}
-    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-green-500" />
-  </div>
+    <div className="w-[100px] h-[50px] rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center text-xs font-bold text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+        {data.label}
+        <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-green-500" />
+    </div>
 );
 
 const EndNode = ({ data }: any) => (
-  <div className="w-[100px] h-[50px] rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-xs font-bold text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-red-500" />
-    {data.label}
-  </div>
+    <div className="w-[100px] h-[50px] rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-xs font-bold text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+        <Handle type="target" position={Position.Top} className="w-2 h-2 bg-red-500" />
+        {data.label}
+    </div>
 );
 
 const ProcessNode = ({ data }: any) => (
-  <div className="w-[120px] h-[60px] bg-blue-500/20 border-2 border-blue-500 rounded flex items-center justify-center text-xs font-bold text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-blue-500" />
-    {data.label}
-    <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-blue-500" />
-  </div>
+    <div className="w-[120px] h-[60px] bg-blue-500/20 border-2 border-blue-500 rounded flex items-center justify-center text-xs font-bold text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+        <Handle type="target" position={Position.Top} className="w-2 h-2 bg-blue-500" />
+        {data.label}
+        <Handle type="source" position={Position.Bottom} className="w-2 h-2 bg-blue-500" />
+    </div>
 );
 
 const DecisionNode = ({ data }: any) => (
-  <div className="w-[100px] h-[100px] relative flex items-center justify-center">
-    <div className="absolute inset-0 bg-yellow-500/20 border-2 border-yellow-500 rotate-45 rounded-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]"></div>
-    <div className="relative z-10 text-[10px] font-bold text-yellow-500 text-center px-2">{data.label}</div>
-    <Handle type="target" position={Position.Top} className="w-2 h-2 bg-yellow-500 -mt-[50px]" />
-    <Handle type="source" position={Position.Right} id="yes" className="w-2 h-2 bg-green-500 -mr-[50px]" />
-    <Handle type="source" position={Position.Bottom} id="no" className="w-2 h-2 bg-red-500 -mb-[50px]" />
-  </div>
+    <div className="w-[100px] h-[100px] relative flex items-center justify-center">
+        <div className="absolute inset-0 bg-yellow-500/20 border-2 border-yellow-500 rotate-45 rounded-sm shadow-[0_0_15px_rgba(234,179,8,0.3)]"></div>
+        <div className="relative z-10 text-[10px] font-bold text-yellow-500 text-center px-2">{data.label}</div>
+        <Handle type="target" position={Position.Top} className="w-2 h-2 bg-yellow-500 -mt-[50px]" />
+        <Handle type="source" position={Position.Right} id="yes" className="w-2 h-2 bg-green-500 -mr-[50px]" />
+        <Handle type="source" position={Position.Bottom} id="no" className="w-2 h-2 bg-red-500 -mb-[50px]" />
+    </div>
 );
 
 const nodeTypes = {
@@ -66,7 +66,7 @@ const nodeTypes = {
     end: EndNode,
     process: ProcessNode,
     decision: DecisionNode,
-    default: ProcessNode 
+    default: ProcessNode
 };
 
 // --- TYPES ---
@@ -127,8 +127,8 @@ const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
                     edges={edges || []}
                     nodeTypes={nodeTypes}
                     fitView
-                    nodesDraggable={false} 
-                    nodesConnectable={false} 
+                    nodesDraggable={false}
+                    nodesConnectable={false}
                     elementsSelectable={true}
                     zoomOnScroll={true}
                     panOnDrag={true}
@@ -152,19 +152,19 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
     return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-zinc-950 border border-zinc-800 w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
-                
+
                 {/* Header */}
                 <div className="p-6 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-bold text-white flex items-center gap-2"><Activity className="w-5 h-5 text-blue-500" /> Inspection Mode</h2>
-                        <p className="text-zinc-400 text-sm mt-1 font-mono">{user.email} <span className="text-zinc-600">|</span> ID: {user.user_id.slice(0,8)}</p>
+                        <p className="text-zinc-400 text-sm mt-1 font-mono">{user.email} <span className="text-zinc-600">|</span> ID: {user.user_id.slice(0, 8)}</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-zinc-800"><X className="w-6 h-6 text-zinc-400" /></Button>
                 </div>
 
                 {/* Content Layout */}
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                    
+
                     {/* Left Sidebar */}
                     <div className="w-full md:w-64 bg-zinc-900/30 border-r border-zinc-800 p-4 space-y-6 overflow-y-auto shrink-0">
                         <div className="space-y-3">
@@ -225,9 +225,9 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
                                                 </div>
                                                 <div className="space-y-2">
                                                     <p className="text-xs text-zinc-500 uppercase font-bold flex items-center gap-2"><Maximize2 className="w-3 h-3" /> Visual Replica</p>
-                                                    <FlowchartViewer 
-                                                        nodes={Array.isArray(data.flowchart.nodes) ? data.flowchart.nodes : []} 
-                                                        edges={Array.isArray(data.flowchart.edges) ? data.flowchart.edges : []} 
+                                                    <FlowchartViewer
+                                                        nodes={Array.isArray(data.flowchart.nodes) ? data.flowchart.nodes : []}
+                                                        edges={Array.isArray(data.flowchart.edges) ? data.flowchart.edges : []}
                                                     />
                                                 </div>
                                             </div>
@@ -295,14 +295,14 @@ export default function AdminPanel() {
     const [loadingInspection, setLoadingInspection] = useState(false);
     const [questionsTab, setQuestionsTab] = useState<'mcq' | 'flowchart' | 'coding'>('mcq');
 
-    const [newQ, setNewQ] = useState<any>({ 
-        round_id: 'mcq', 
-        title: '', 
-        description: '', 
-        optionA: '', optionB: '', optionC: '', optionD: '', 
-        correct: '', 
-        difficulty: 'easy', 
-        code_snippet: '', 
+    const [newQ, setNewQ] = useState<any>({
+        round_id: 'mcq',
+        title: '',
+        description: '',
+        optionA: '', optionB: '', optionC: '', optionD: '',
+        correct: '',
+        difficulty: 'easy',
+        code_snippet: '',
         example1_input: '', example1_output: '', example1_explanation: '',
         example2_input: '', example2_output: '', example2_explanation: '',
         constraint1: '', constraint2: '', constraint3: ''
@@ -312,11 +312,13 @@ export default function AdminPanel() {
         title: '', description: '', req1: '', req2: '', req3: '', req4: ''
     });
 
-    // Dynamic Counts
+    // Dynamic Counts - UPDATED TO INCLUDE WAITING STATES
     const waitingCount = participants.filter(p => p.current_round_slug === 'waiting').length;
-    const rulesCount = participants.filter(p => p.current_round_slug === 'rules').length; 
+    const rulesCount = participants.filter(p => p.current_round_slug === 'rules').length;
     const mcqCount = participants.filter(p => p.current_round_slug === 'mcq').length;
+    const waitingR2Count = participants.filter(p => p.current_round_slug === 'waiting_r2').length; // Waiting for R2
     const flowchartCount = participants.filter(p => p.current_round_slug === 'flowchart').length;
+    const waitingR3Count = participants.filter(p => p.current_round_slug === 'waiting_r3').length; // Waiting for R3
     const codingCount = participants.filter(p => p.current_round_slug === 'coding').length;
 
     const fetchData = async () => {
@@ -339,8 +341,8 @@ export default function AdminPanel() {
 
             // Fetch Leaderboard
             const { data: lData } = await supabase.from('leaderboard').select('*');
-            
-            // Robustly fetch submission details (without failing if empty)
+
+            // Robustly fetch submission details
             const { data: mcqSubs } = await supabase.from('mcq_submissions').select('user_id, updated_at, created_at');
             const { data: flowSubs } = await supabase.from('flowchart_submissions').select('user_id, updated_at, created_at');
             const { data: codeSubs } = await supabase.from('coding_submissions').select('user_id, updated_at, created_at');
@@ -348,16 +350,14 @@ export default function AdminPanel() {
             if (lData && users) {
                 const enhancedData = lData.map(entry => {
                     const user = users.find(u => u.user_id === entry.user_id);
-                    
+
                     const mcqSub = mcqSubs?.find(s => s.user_id === entry.user_id);
                     const flowSub = flowSubs?.find(s => s.user_id === entry.user_id);
                     const codeSub = codeSubs?.find(s => s.user_id === entry.user_id);
 
-                    return { 
-                        ...entry, 
+                    return {
+                        ...entry,
                         user_email: user?.email || 'Unknown User',
-                        // Prioritize Leaderboard Table Scores (since upsert is reliable)
-                        // Submission tables used primarily for timestamps here
                         round1_time: mcqSub?.updated_at || mcqSub?.created_at || entry.updated_at,
                         round2_time: flowSub?.updated_at || flowSub?.created_at,
                         round3_time: codeSub?.updated_at || codeSub?.created_at
@@ -366,7 +366,6 @@ export default function AdminPanel() {
 
                 enhancedData.sort((a, b) => {
                     if (b.overall_score !== a.overall_score) return b.overall_score - a.overall_score;
-                    // Secondary sort by round 1 score if overall tied
                     return b.round1_score - a.round1_score;
                 });
                 setLeaderboardData(enhancedData);
@@ -424,15 +423,15 @@ export default function AdminPanel() {
         const targetStatus = action === 'freeze' ? 'frozen' : action === 'unfreeze' ? 'active' : 'disqualified';
         setParticipants(prev => prev.map(p => p.user_id === userId ? { ...p, status: targetStatus } : p));
         const { error } = await supabase.from('exam_sessions').update({ status: targetStatus }).eq('user_id', userId);
-        if (error) { toast.error("Action failed"); fetchData(); } 
+        if (error) { toast.error("Action failed"); fetchData(); }
         else { toast.success(`User status updated to: ${targetStatus}`); }
     };
 
     const moveUserToRound = async (userId: string, round: 'mcq' | 'flowchart' | 'coding' | 'rules') => {
-        if(!confirm(`⚠️ FORCE MOVE: Send user to ${round.toUpperCase()}?`)) return;
+        if (!confirm(`⚠️ FORCE MOVE: Send user to ${round.toUpperCase()}?`)) return;
         setParticipants(prev => prev.map(p => p.user_id === userId ? { ...p, current_round_slug: round } : p));
         const { error } = await supabase.from('exam_sessions').update({ current_round_slug: round }).eq('user_id', userId);
-        if(error) { toast.error("Move failed"); fetchData(); }
+        if (error) { toast.error("Move failed"); fetchData(); }
         else { toast.success(`Moved to ${round.toUpperCase()}`); }
     };
 
@@ -461,33 +460,33 @@ export default function AdminPanel() {
         setSelectedUser(user);
         setLoadingInspection(true);
         setInspectionData(null);
-        
+
         try {
             const { data: flowData } = await supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-            const { data: mcqData } = await supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).limit(1).maybeSingle(); 
+            const { data: mcqData } = await supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).limit(1).maybeSingle();
             const { data: codingData } = await supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).limit(1).maybeSingle();
 
-            setInspectionData({ 
+            setInspectionData({
                 flowchart: flowData ? { ...flowData, timestamp: flowData.updated_at || flowData.created_at } : null,
                 mcq: mcqData ? { ...mcqData, timestamp: mcqData.updated_at || mcqData.created_at } : null,
                 coding: codingData ? { ...codingData, timestamp: codingData.updated_at || codingData.created_at } : null
             });
-        } catch (err) { 
+        } catch (err) {
             console.error("Critical Inspection Failure:", err);
             toast.error("Error fetching submission details.");
-        } finally { 
-            setLoadingInspection(false); 
+        } finally {
+            setLoadingInspection(false);
         }
     };
 
     const closeInspection = () => { setSelectedUser(null); setInspectionData(null); };
 
     const consolidateSubmissions = async () => {
-        if(!confirm("⚠️ SYNC FINAL SUBMISSIONS? This will aggregate data for users who finished all rounds into the 'submissions' table.")) return;
+        if (!confirm("⚠️ SYNC FINAL SUBMISSIONS? This will aggregate data for users who finished all rounds into the 'submissions' table.")) return;
         setLoading(true);
         try {
             const { data: entries } = await supabase.from('leaderboard').select('*');
-            if(!entries) throw new Error("No data");
+            if (!entries) throw new Error("No data");
 
             let count = 0;
             for (const entry of entries) {
@@ -512,14 +511,14 @@ export default function AdminPanel() {
         }
     };
 
-    // --- ROUND CONTROLS (BULK) ---
+    // --- ROUND CONTROLS (BULK) - UPDATED TO TARGET WAITING ROOMS ---
     const startExam = async () => {
         if (!confirm("⚠️ START EXAM?")) return;
         const toastId = toast.loading("Starting Round 1...");
         setParticipants(prev => prev.map(p => (p.current_round_slug === 'waiting' || p.current_round_slug === 'rules') ? { ...p, current_round_slug: 'mcq', status: 'active' } : p));
         const { error } = await supabase.from('exam_sessions')
             .update({ current_round_slug: 'mcq', status: 'active' })
-            .in('current_round_slug', ['waiting', 'rules']) 
+            .in('current_round_slug', ['waiting', 'rules'])
             .select();
         if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Round 1 Started!`, { id: toastId });
     };
@@ -527,16 +526,30 @@ export default function AdminPanel() {
     const startRound2 = async () => {
         if (!confirm("⚠️ START ROUND 2?")) return;
         const toastId = toast.loading("Starting Round 2...");
-        setParticipants(prev => prev.map(p => p.current_round_slug === 'mcq' ? { ...p, current_round_slug: 'flowchart', status: 'active' } : p));
-        const { error } = await supabase.from('exam_sessions').update({ current_round_slug: 'flowchart', status: 'active' }).eq('current_round_slug', 'mcq').select();
+
+        // TARGET 'waiting_r2' USERS ONLY
+        setParticipants(prev => prev.map(p => p.current_round_slug === 'waiting_r2' ? { ...p, current_round_slug: 'flowchart', status: 'active' } : p));
+
+        const { error } = await supabase.from('exam_sessions')
+            .update({ current_round_slug: 'flowchart', status: 'active' })
+            .eq('current_round_slug', 'waiting_r2') // Only pick up those waiting for R2
+            .select();
+
         if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Round 2 Started!`, { id: toastId });
     };
 
     const startRound3 = async () => {
         if (!confirm("⚠️ START ROUND 3?")) return;
         const toastId = toast.loading("Starting Round 3...");
-        setParticipants(prev => prev.map(p => p.current_round_slug === 'flowchart' ? { ...p, current_round_slug: 'coding', status: 'active' } : p));
-        const { error } = await supabase.from('exam_sessions').update({ current_round_slug: 'coding', status: 'active' }).eq('current_round_slug', 'flowchart').select();
+
+        // TARGET 'waiting_r3' USERS ONLY
+        setParticipants(prev => prev.map(p => p.current_round_slug === 'waiting_r3' ? { ...p, current_round_slug: 'coding', status: 'active' } : p));
+
+        const { error } = await supabase.from('exam_sessions')
+            .update({ current_round_slug: 'coding', status: 'active' })
+            .eq('current_round_slug', 'waiting_r3') // Only pick up those waiting for R3
+            .select();
+
         if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Round 3 Started!`, { id: toastId });
     };
 
@@ -554,7 +567,7 @@ export default function AdminPanel() {
         const { error } = await supabase.from('exam_sessions')
             .update({ current_round_slug: 'rules' })
             .neq('status', 'disqualified');
-        if (error) toast.error("Action failed", { id: toastId }); 
+        if (error) toast.error("Action failed", { id: toastId });
         else toast.success("Everyone moved to Rules Page.", { id: toastId });
     };
 
@@ -627,11 +640,12 @@ export default function AdminPanel() {
                 {activeTab === 'monitor' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                            {[{ label: 'Active', count: participants.filter(p => p.status === 'active').length, color: 'text-green-500' }, 
-                              { label: 'Frozen', count: participants.filter(p => p.status === 'frozen').length, color: 'text-orange-500' }, 
-                              { label: 'Waiting', count: waitingCount, color: 'text-blue-500' }, 
-                              { label: 'Rules', count: rulesCount, color: 'text-purple-500' },
-                              { label: 'Banned', count: participants.filter(p => p.status === 'disqualified').length, color: 'text-red-600' }
+                            {[{ label: 'Active', count: participants.filter(p => p.status === 'active').length, color: 'text-green-500' },
+                            { label: 'Frozen', count: participants.filter(p => p.status === 'frozen').length, color: 'text-orange-500' },
+                            { label: 'Waiting (R1)', count: waitingCount, color: 'text-blue-500' },
+                            { label: 'Waiting (R2)', count: waitingR2Count, color: 'text-blue-400' },
+                            { label: 'Waiting (R3)', count: waitingR3Count, color: 'text-blue-300' },
+                            { label: 'Banned', count: participants.filter(p => p.status === 'disqualified').length, color: 'text-red-600' }
                             ].map((stat, i) => (
                                 <div key={i} className="bg-zinc-900/80 border border-zinc-800 p-4 rounded-xl">
                                     <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider mb-1">{stat.label}</div>
@@ -672,7 +686,7 @@ export default function AdminPanel() {
                                             </td>
                                             <td className="p-4 text-center"><span className={cn("font-mono text-lg font-bold", p.tab_switches > 0 ? "text-red-500" : "text-zinc-700")}>{p.tab_switches}</span></td>
                                             <td className="p-4 pr-6 flex justify-end items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                
+
                                                 <div className="flex bg-zinc-950 rounded-lg p-1 border border-zinc-800 mr-2">
                                                     <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'mcq')} className={cn("h-7 w-7", p.current_round_slug === 'mcq' ? "bg-green-600 text-white shadow-lg" : "text-zinc-500 hover:text-green-400 hover:bg-green-900/20")} title="Move to MCQ"><ListChecks className="w-4 h-4" /></Button>
                                                     <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'flowchart')} className={cn("h-7 w-7", p.current_round_slug === 'flowchart' ? "bg-yellow-600 text-black shadow-lg" : "text-zinc-500 hover:text-yellow-400 hover:bg-yellow-900/20")} title="Move to Flowchart"><Workflow className="w-4 h-4" /></Button>
@@ -726,26 +740,28 @@ export default function AdminPanel() {
                                 </div>
                                 <Button onClick={startExam} disabled={loading} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 1"}</Button>
                             </div>
+
                             <div className="bg-zinc-900/80 border border-yellow-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-yellow-600/50 transition-colors">
                                 <h3 className="text-lg font-bold text-yellow-400 mb-2 flex items-center gap-2"><Workflow className="w-5 h-5" /> Start Round 2</h3>
-                                <p className="text-zinc-400 mb-2 text-xs">MCQ → Flowchart</p>
+                                <p className="text-zinc-400 mb-2 text-xs">Waiting R2 → Flowchart</p>
                                 <div className="flex items-center gap-4 mb-4 text-xs">
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500"></div><span className="text-zinc-500">MCQ:</span><span className="font-bold text-white">{mcqCount}</span></div>
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-400"></div><span className="text-zinc-500">Wait R2:</span><span className="font-bold text-white">{waitingR2Count}</span></div>
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-yellow-500"></div><span className="text-zinc-500">Flow:</span><span className="font-bold text-white">{flowchartCount}</span></div>
                                 </div>
                                 <Button onClick={startRound2} disabled={loading} className="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 2"}</Button>
                             </div>
+
                             <div className="bg-zinc-900/80 border border-purple-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-purple-600/50 transition-colors">
                                 <h3 className="text-lg font-bold text-purple-400 mb-2 flex items-center gap-2"><Code className="w-5 h-5" /> Start Round 3</h3>
-                                <p className="text-zinc-400 mb-2 text-xs">Flowchart → Coding</p>
+                                <p className="text-zinc-400 mb-2 text-xs">Waiting R3 → Coding</p>
                                 <div className="flex items-center gap-4 mb-4 text-xs">
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-yellow-500"></div><span className="text-zinc-500">Flow:</span><span className="font-bold text-white">{flowchartCount}</span></div>
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-300"></div><span className="text-zinc-500">Wait R3:</span><span className="font-bold text-white">{waitingR3Count}</span></div>
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-purple-500"></div><span className="text-zinc-500">Code:</span><span className="font-bold text-white">{codingCount}</span></div>
                                 </div>
                                 <Button onClick={startRound3} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 3"}</Button>
                             </div>
                         </div>
-                        
+
                         <div className="grid md:grid-cols-3 gap-6">
                             <div className="bg-zinc-900/80 border border-blue-900/50 p-8 rounded-2xl relative overflow-hidden group hover:border-blue-600/50 transition-colors">
                                 <h3 className="text-xl font-bold text-blue-500 mb-2 flex items-center gap-2"><BookOpen className="w-5 h-5" /> Redirect to Rules</h3>
@@ -888,19 +904,19 @@ export default function AdminPanel() {
                                             <td className="p-4 font-medium text-white">
                                                 <div><p className="text-sm font-bold text-zinc-200">{entry.user_email}</p><p className="font-mono text-[10px] text-zinc-600">{entry.user_id.slice(0, 8)}</p></div>
                                             </td>
-                                            
+
                                             {/* Round Scores with ACTUAL SUBMISSION TIME */}
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round1_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round1_time)}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round1_time)}</div>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round2_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round2_time)}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round2_time)}</div>
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="font-mono text-zinc-300">{entry.round3_score}</div>
-                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2"/> {formatTime(entry.round3_time)}</div>
+                                                <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round3_time)}</div>
                                             </td>
 
                                             {/* Total Score & Time */}
@@ -910,7 +926,7 @@ export default function AdminPanel() {
                                                     <FastForward className="w-3 h-3" /> {entry.total_time_seconds ? formatDuration(entry.total_time_seconds) : "N/A"}
                                                 </div>
                                             </td>
-                                            
+
                                             <td className="p-4 text-right"><Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" onClick={() => { const p = participants.find(part => part.user_id === entry.user_id); if (p) inspectUser(p); else toast.error("User details not found"); }}><Eye className="w-4 h-4" /></Button></td>
                                         </tr>
                                     ))}
@@ -921,7 +937,7 @@ export default function AdminPanel() {
                     </div>
                 )}
 
-            </div>         
+            </div>
 
             {/* INSPECTION MODAL */}
             {selectedUser && (
