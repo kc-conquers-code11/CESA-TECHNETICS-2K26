@@ -36,18 +36,20 @@ export const CompetitionLayout = () => {
   const isSidebarExpanded = timelineHover || isPinned;
 
   // HELPER: Smart Sync that checks for Round Completion
+  // HELPER: Smart Sync that checks for Round Completion
   const smartSync = async (sessionData: any) => {
     if (!sessionData) return;
 
     const round = sessionData.current_round;
 
-    // ✅ SAFETY CHECK: If round is missing, just sync and exit (prevents crash)
     if (!round) {
         syncSession(sessionData);
         return;
     }
 
-    // Check if user finished coding but DB still says 'coding' or 'waiting'
+    //  FIX: Agar Admin ne status 'frozen' ya 'active' rakha hai, toh hum 'completed' force nahi karenge.
+    // Hum sirf tabhi complete manenge jab Admin ne session close kiya ho ya user ne khud submit kiya ho AUR session active na ho.
+    
     if (round === 'coding' || round.startsWith('waiting')) {
       const { data: codingSub } = await supabase
         .from('coding_submissions')
@@ -55,7 +57,8 @@ export const CompetitionLayout = () => {
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (codingSub?.status === 'completed') {
+      // CHANGE HERE: Check if session is NOT active before forcing completion
+      if (codingSub?.status === 'completed' && sessionData.status !== 'active' && sessionData.status !== 'frozen') {
         console.log("✅ Detected Coding Completion. Forcing 'completed' state.");
         syncSession({ ...sessionData, current_round: 'completed' });
         return;
