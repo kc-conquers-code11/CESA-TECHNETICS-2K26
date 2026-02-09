@@ -15,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// Render/Vercel support
 const PORT = process.env.PORT || 3001;
 
 // JUDGE0 CONFIG
@@ -23,7 +24,7 @@ const JUDGE0_URLS = [
     'http://172.20.0.10:2358',
     'http://localhost:2358',
     'http://backup:2358'
-].filter(Boolean); // Filter out undefined env vars
+].filter(Boolean);
 
 // Supabase Config
 const supabase = createClient(
@@ -34,7 +35,7 @@ const supabase = createClient(
 // RATE LIMITER
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, 
-    max: 60, 
+    max: 120, // 2 requests/sec
     standardHeaders: true, 
     legacyHeaders: false, 
     message: { status: 'Error', output: 'Too many requests, please try again later.', results: [] }
@@ -57,13 +58,12 @@ interface Problem {
     title: string;
     testCases: TestCase[];
     functionName: string;
-    // Optional dynamic runner codes for compiled languages
     runner_code_java?: string;
     runner_code_cpp?: string;
     runner_code_c?: string;
 }
 
-// --- HARDCODED FALLBACK (For safety if DB fails) ---
+// --- HARDCODED FALLBACK ---
 const FALLBACK_PROBLEMS: Record<string, Problem> = {
     'two-sum': {
         id: 'two-sum',
@@ -79,8 +79,6 @@ const FALLBACK_PROBLEMS: Record<string, Problem> = {
 // --- DYNAMIC FETCH FROM DB ---
 async function getProblemDetails(problemId: string): Promise<Problem | null> {
     try {
-        // Assuming table name is 'coding_problems' or 'questions'
-        // Adjust table name if yours is different
         const { data, error } = await supabase
             .from('coding_problems') 
             .select('*')
@@ -88,14 +86,14 @@ async function getProblemDetails(problemId: string): Promise<Problem | null> {
             .single();
 
         if (error || !data) {
-            console.warn(`[DB] Problem ${problemId} not found in DB, checking fallback.`);
+            console.warn(`[DB] Problem ${problemId} not found/error, using fallback.`);
             return FALLBACK_PROBLEMS[problemId] || null;
         }
 
         return {
             id: data.id,
             title: data.title,
-            testCases: data.test_cases || [], // Ensure column is named 'test_cases' (snake_case)
+            testCases: data.test_cases || [],
             functionName: data.function_name || 'solve',
             runner_code_java: data.runner_code_java,
             runner_code_cpp: data.runner_code_cpp,
@@ -107,7 +105,6 @@ async function getProblemDetails(problemId: string): Promise<Problem | null> {
     }
 }
 
-// Judge0 Language IDs
 const JUDGE0_LANG_IDS: Record<string, number> = {
     'javascript': 63,
     'typescript': 74,
@@ -128,74 +125,180 @@ function validateCode(code: string, language: string): boolean {
     return true;
 }
 
-// --- TEMPLATES ---
-const TEMPLATES: Record<string, string> = {};
-async function loadTemplates() {
-    const langs = ['javascript', 'typescript', 'python', 'java', 'cpp', 'c'];
-    for (const lang of langs) {
-        try {
-            // Ensure you have a 'templates' folder next to this file
-            const templatePath = path.join(__dirname, 'templates', `${lang}.txt`);
-            TEMPLATES[lang] = await fs.promises.readFile(templatePath, 'utf-8');
-        } catch (e) {
-            console.error(`Failed to load template for ${lang}:`, e);
-        }
+// --- HELPER: FORMAT JAVA ARGUMENTS ---
+function toJava(val: any): string {
+    if (Array.isArray(val)) {
+        if (val.length === 0) return "new int[]{}"; 
+        if (typeof val[0] === 'string') return `new String[]{${val.map(s => `"${s}"`).join(',')}}`;
+        return `new int[]{${val.join(',')}}`;
     }
+    if (typeof val === 'string') return `"${val}"`;
+    if (typeof val === 'boolean') return val.toString();
+    return val.toString();
 }
-loadTemplates();
 
-// --- CODE WRAPPING LOGIC ---
-function wrapCode(code: string, language: string, problem: Problem): string {
-    const template = TEMPLATES[language];
-    if (!template) return code;
+// --- HELPER: FORMAT C++ ARGUMENTS ---
+function toCpp(val: any): string {
+    if (Array.isArray(val)) {
+        return `{${val.join(',')}}`; 
+    }
+    if (typeof val === 'string') return `"${val}"`;
+    if (typeof val === 'boolean') return val.toString();
+    return val.toString();
+}
 
-    const testCasesJSON = JSON.stringify(problem.testCases.map((tc) => tc.params));
-    let wrapped = template
-        .replace('{{USER_CODE}}', code)
-        .replace('{{FUNCTION_NAME}}', problem.functionName)
-        .replace('{{TEST_CASES_JSON}}', testCasesJSON);
+// --- DYNAMIC RUNNER GENERATOR ---
+function generateRunner(language: string, problem: Problem, userCode: string): string {
+    const testCases = problem.testCases || [];
+    const funcName = problem.functionName || 'solve';
 
-    // Dynamic Runner Logic for Compiled Languages
+    // 1. JAVASCRIPT / TYPESCRIPT
+    if (language === 'javascript' || language === 'typescript') {
+        return `
+${userCode}
+
+// --- JUDGE SYSTEM ---
+const testCases = ${JSON.stringify(testCases.map((t: any) => t.params))};
+testCases.forEach((tc, i) => {
+    try {
+        const result = ${funcName}(...Object.values(tc));
+        const resStr = Array.isArray(result) ? JSON.stringify(result) : result;
+        console.log(\`__JUDGE__ Test Case \${i + 1}: \${resStr}\`);
+    } catch (e) {
+        console.log(\`__JUDGE__ Test Case \${i + 1}: ERROR_RUNTIME\`);
+    }
+});
+`;
+    }
+
+    // 2. PYTHON (Robust Fix)
+    if (language === 'python') {
+        return `
+import sys
+import json
+
+# User Code
+${userCode}
+
+# Judge System
+if __name__ == "__main__":
+    try:
+        solution = Solution()
+        # Parse test cases safely using JSON to handle arrays properly
+        test_cases_json = '${JSON.stringify(testCases.map((t: any) => t.params))}'
+        test_cases = json.loads(test_cases_json)
+        
+        for i, tc in enumerate(test_cases):
+            try:
+                args = list(tc.values())
+                result = solution.${funcName}(*args)
+                
+                # Format output for JS Parser
+                # We simply print the result string. The JS parser removes spaces.
+                # Use json.dumps to ensure lists are formatted as [1, 2] not [1,2] (standardize)
+                print(f"__JUDGE__ Test Case {i+1}: {json.dumps(result)}")
+                
+            except Exception as e:
+                print(f"__JUDGE__ Test Case {i+1}: ERROR_RUNTIME")
+                # Print error to stderr so it doesn't mess up parsing but visible in debug
+                sys.stderr.write(f"TestCase {i+1} Error: {str(e)}\\n")
+                
+    except Exception as e:
+        sys.stderr.write(f"Critical Runner Error: {str(e)}\\n")
+`;
+    }
+
+    // 3. JAVA (Dynamic Class Wrapper)
     if (language === 'java') {
-        const sanitizedCode = code.replace(/public\s+class\s+Solution/, 'class Solution');
-        wrapped = wrapped.replace('{{USER_CODE}}', sanitizedCode);
+        const sanitizedCode = userCode.replace(/public\s+class\s+Solution/, 'class Solution');
+        
+        let runnerCalls = testCases.map((tc: any, i: number) => {
+            const args = Object.values(tc.params).map(val => toJava(val)).join(', ');
+            return `
+            try {
+                Object res = sol.${funcName}(${args});
+                System.out.print("__JUDGE__ Test Case ${i + 1}: ");
+                if (res instanceof int[]) System.out.println(java.util.Arrays.toString((int[])res).replaceAll(" ", ""));
+                else if (res instanceof String[]) System.out.println(java.util.Arrays.toString((String[])res));
+                else System.out.println(res);
+            } catch (Exception e) {
+                System.out.println("__JUDGE__ Test Case ${i + 1}: ERROR_RUNTIME");
+            }
+            `;
+        }).join('\n');
 
-        // 1. Check if DB provided a custom runner
-        if (problem.runner_code_java) {
-            wrapped = wrapped.replace('{{TEST_RUNNER}}', problem.runner_code_java);
-        } else {
-            // 2. Fallback to Hardcoded Logic (Maintain backward compatibility)
-            wrapped = wrapped.replace('{{TEST_RUNNER}}', generateFallbackRunner(problem.id, 'java'));
-        }
+        return `
+import java.util.*;
+import java.io.*;
+
+${sanitizedCode}
+
+public class Main {
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        ${runnerCalls}
     }
-    else if (language === 'cpp' || language === 'c') {
-        const field = language === 'cpp' ? 'runner_code_cpp' : 'runner_code_c';
-        // @ts-ignore
-        if (problem[field]) {
-             // @ts-ignore
-            wrapped = wrapped.replace('{{TEST_RUNNER}}', problem[field]);
-        } else {
-            wrapped = wrapped.replace('{{TEST_RUNNER}}', generateFallbackRunner(problem.id, language));
-        }
+}
+`;
     }
 
-    return wrapped;
+    // 4. C++ (Dynamic Main)
+    if (language === 'cpp') {
+        let runnerCalls = testCases.map((tc: any, i: number) => {
+            const args = Object.values(tc.params).map(val => toCpp(val)).join(', ');
+            return `
+            try {
+                auto res = sol.${funcName}(${args});
+                cout << "__JUDGE__ Test Case ${i + 1}: ";
+                printResult(res);
+                cout << endl;
+            } catch (...) {
+                cout << "__JUDGE__ Test Case ${i + 1}: ERROR_RUNTIME" << endl;
+            }
+            `;
+        }).join('\n');
+
+        return `
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <map>
+using namespace std;
+
+// Helper to print vectors
+template <typename T>
+void printResult(const vector<T>& v) {
+    cout << "[";
+    for (size_t i = 0; i < v.size(); ++i) {
+        cout << v[i] << (i < v.size() - 1 ? "," : "");
+    }
+    cout << "]";
 }
 
-// Helper for Hardcoded Runner Logic (Legacy Support)
-function generateFallbackRunner(problemId: string, lang: 'java' | 'cpp' | 'c'): string {
-    // Keep your existing hardcoded strings here for 'two-sum' and 'binary-search'
-    // I've condensed this for brevity, but paste your original big string blocks here.
-    if (problemId === 'two-sum') {
-        if(lang === 'java') return `
-            int[] r1 = sol.twoSum(new int[]{2,7,11,15}, 9); Arrays.sort(r1); System.out.println("__JUDGE__ Test Case 1: " + Arrays.toString(r1).replaceAll(" ", ""));
-            int[] r2 = sol.twoSum(new int[]{3,2,4}, 6); Arrays.sort(r2); System.out.println("__JUDGE__ Test Case 2: " + Arrays.toString(r2).replaceAll(" ", ""));
-            // ... add other cases
-        `;
-        // Add CPP/C fallback...
+// Helper to print basic types
+template <typename T>
+void printResult(T val) {
+    cout << val;
+}
+
+// Helper for boolean
+void printResult(bool val) {
+    cout << (val ? "true" : "false");
+}
+
+${userCode}
+
+int main() {
+    Solution sol;
+    ${runnerCalls}
+    return 0;
+}
+`;
     }
-    // Default empty if unknown problem and no DB runner
-    return `System.out.println("No runner defined for this problem.");`;
+
+    // Default Fallback
+    return userCode;
 }
 
 // --- BUCKET SAVE ---
@@ -221,7 +324,7 @@ async function submitWithFallback(payload: any): Promise<any> {
         if(!url) continue;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 8000); 
             const response = await fetch(`${url}/submissions?base64_encoded=true&wait=false`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -244,21 +347,15 @@ async function submitWithFallback(payload: any): Promise<any> {
     throw lastError || new Error("All Judge0 instances failed.");
 }
 
-// --- EXECUTE API ---
+// --- 🔥 EXECUTE API ---
 app.post('/api/execute', async (req: express.Request, res: express.Response) => {
     const { code, language, problemId, teamName, isSubmission, userId } = req.body;
-    console.log(`[EXECUTE] Request: ${problemId} | ${language} | User: ${userId}`);
-
-    // 1. Fetch Dynamic Problem Data
-    const problem = await getProblemDetails(problemId);
     
-    if (!problem) {
-        return res.status(404).json({ status: 'Error', output: 'Problem not found in database.', results: [] });
-    }
+    // 1. Get Problem
+    const problem = await getProblemDetails(problemId);
+    if (!problem) return res.status(404).json({ status: 'Error', output: 'Problem not found.', results: [] });
 
-    if (!validateCode(code, language)) {
-        return res.status(400).json({ status: 'Invalid', output: 'Restricted content detected.', results: [] });
-    }
+    if (!validateCode(code, language)) return res.status(400).json({ status: 'Invalid', output: 'Restricted content detected.', results: [] });
 
     try {
         // 2. Queue in DB
@@ -274,7 +371,7 @@ app.post('/api/execute', async (req: express.Request, res: express.Response) => 
         if (dbError) return res.status(500).json({ error: "DB Insert Failed" });
 
         const jobId = insertData.id;
-        res.json({ job_id: jobId, status: 'queued' });
+        res.json({ job_id: jobId, status: 'queued' }); // Respond immediately
 
         // 3. Background Process
         (async () => {
@@ -284,11 +381,8 @@ app.post('/api/execute', async (req: express.Request, res: express.Response) => 
                     savedFile = await saveToBucket(teamName || "anonymous", problemId, language, code);
                 }
 
-                // Wrap using fetched problem details
-                const wrappedCode = wrapCode(code, language, problem);
+                const wrappedCode = generateRunner(language, problem, code);
                 const judge0Id = JUDGE0_LANG_IDS[language];
-
-                if (!judge0Id) throw new Error("Unsupported Language");
 
                 const payload = {
                     source_code: Buffer.from(wrappedCode).toString('base64'),
@@ -316,11 +410,22 @@ app.post('/api/execute', async (req: express.Request, res: express.Response) => 
     }
 });
 
-// --- PARSER ---
+// --- 🔥 ROBUST OUTPUT PARSER ---
 function parseJudge0Output(stdout: string, problem: Problem) {
     const judgeLines = stdout.split('\n').filter((l: string) => l.startsWith('__JUDGE__ '));
     const results: any[] = [];
     let passedCount = 0;
+
+    // Normalizer: Removes ALL whitespace, newlines, and quotes for comparison
+    const normalize = (val: any) => {
+        if (val === null || val === undefined) return '';
+        return String(val)
+            .replace(/\s+/g, '') // Remove spaces
+            .replace(/['"]/g, '') // Remove quotes
+            .replace(/\n/g, '') // Remove newlines
+            .trim()
+            .toLowerCase(); // Case insensitive
+    };
 
     problem.testCases.forEach((tc, index) => {
         const searchStr = `__JUDGE__ Test Case ${index + 1}: `;
@@ -335,17 +440,22 @@ function parseJudge0Output(stdout: string, problem: Problem) {
         };
 
         if (line) {
-            const actual = line.replace(searchStr, '').trim();
-            resObj.actual = actual;
-            const normalize = (s: string) => s.replace(/\s+/g, '');
-            if (normalize(actual) === normalize(tc.expected)) {
+            const actualRaw = line.replace(searchStr, '').trim();
+            resObj.actual = actualRaw;
+
+            const normExpected = normalize(tc.expected);
+            const normActual = normalize(actualRaw);
+
+            console.log(`[TEST ${index + 1}] Exp: "${normExpected}" | Act: "${normActual}" | Match: ${normExpected === normActual}`);
+
+            if (normExpected === normActual) {
                 resObj.status = 'Accepted';
                 passedCount++;
             } else {
                 resObj.status = 'Wrong Answer';
             }
         } else {
-            resObj.status = 'Runtime Error';
+            resObj.status = 'Runtime Error'; 
         }
         results.push(resObj);
     });
@@ -360,7 +470,6 @@ app.get('/api/status/:id', async (req: express.Request, res: express.Response) =
     if (error || !data) return res.status(404).json({ error: 'Job not found' });
 
     if (data.status === 'completed' || data.status === 'success') {
-        // Fetch problem details fresh to ensure accurate parsing
         const problem = await getProblemDetails(data.metadata?.problem_id || 'two-sum');
         if(problem) {
             const { results } = parseJudge0Output(data.stdout || "", problem);
@@ -384,7 +493,14 @@ setInterval(async () => {
     for (const job of jobs) {
         try {
             const { judge0_token, judge0_url, problem_id } = job.metadata;
-            const response = await fetch(`${judge0_url}/submissions/${judge0_token}?base64_encoded=true`, { signal: AbortSignal.timeout(5000) });
+            // Add a timeout to fetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch(`${judge0_url}/submissions/${judge0_token}?base64_encoded=true`, { 
+                signal: controller.signal 
+            });
+            clearTimeout(timeoutId);
             
             if (!response.ok) continue;
             const data: any = await response.json();
@@ -398,7 +514,8 @@ setInterval(async () => {
 
             if (data.status.id === 6) { // Compile Error
                 output = Buffer.from(data.compile_output || "", 'base64').toString('utf-8');
-            } else if (data.status.id > 2) {
+                finalStatus = 'error'; 
+            } else { // 3 (Accepted) or Runtime Error or Wrong Answer (all are 'finished' execution wise)
                 const stdoutRaw = data.stdout ? Buffer.from(data.stdout, 'base64').toString('utf-8') : "";
                 stderr = data.stderr ? Buffer.from(data.stderr, 'base64').toString('utf-8') : "";
                 
@@ -408,7 +525,7 @@ setInterval(async () => {
                     const { passedCount } = parseJudge0Output(stdoutRaw, problem);
                     score = parseFloat(((passedCount / problem.testCases.length) * 100).toFixed(2));
                     output = stdoutRaw;
-                    finalStatus = 'completed';
+                    finalStatus = 'completed'; 
                 }
             }
 
@@ -416,10 +533,33 @@ setInterval(async () => {
                 .update({ status: finalStatus, stdout: output, stderr: stderr, score: score })
                 .eq('id', job.id);
 
-            // Update Leaderboard Logic (Simplified)
+            // Update Leaderboard Logic
             if (job.user_id && job.user_id !== 'anonymous') {
-                // ... Your existing leaderboard update logic here ...
-                // Fetch best scores from executions table and upsert to leaderboard table
+                const { data: allExecs } = await supabase.from('executions').select('score, metadata').eq('user_id', job.user_id).or('status.eq.completed,status.eq.success');
+                let totalScore = 0;
+                // Map to store best score per problem
+                const bestScores: Record<string, number> = {};
+                if(allExecs) {
+                    allExecs.forEach((ex: any) => {
+                        const pid = ex.metadata?.problem_id;
+                        const s = parseFloat(ex.score || '0');
+                        if(pid) bestScores[pid] = Math.max(bestScores[pid] || 0, s);
+                    });
+                }
+                bestScores[problem_id] = Math.max(bestScores[problem_id] || 0, score);
+                
+                const round3Score = Object.values(bestScores).reduce((a, b) => a + b, 0);
+
+                const { data: existing } = await supabase.from('leaderboard').select('*').eq('user_id', job.user_id).single();
+                const r1 = existing?.round1_score || 0;
+                const r2 = existing?.round2_score || 0;
+                
+                await supabase.from('leaderboard').upsert({
+                    user_id: job.user_id,
+                    round3_score: round3Score,
+                    overall_score: r1 + r2 + round3Score,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
             }
 
         } catch (e) {
@@ -427,17 +567,12 @@ setInterval(async () => {
         }
     }
 }, 2000);
-// --- HEALTHCHECK ENDPOINT ---
+
+// --- HEALTHCHECK & START ---
 app.get('/healthcheck', (req: express.Request, res: express.Response) => {
     res.status(200).json({ status: 'ok', judge0_urls: JUDGE0_URLS });
 });
 
-// --- SERVER START ---
-// Render/Vercel ke liye process.env.PORT zaruri hai
-const SERVER_PORT = process.env.PORT || 3001; 
-
-app.listen(SERVER_PORT, () => {
-    console.log(`Server running on port ${SERVER_PORT}`);
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
-
-
