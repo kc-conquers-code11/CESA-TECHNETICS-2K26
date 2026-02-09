@@ -476,7 +476,8 @@ const FlowchartBuilder = () => {
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex-1 overflow-y-auto">
           <h3 className="text-xs font-bold text-blue-400 uppercase mb-3 flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5" /> Requirements</h3>
           <ul className="space-y-2">
-            {activeProblem.requirements.map((req, i) => (
+            {/* Check if requirements exists and is an array */}
+            {(Array.isArray(activeProblem?.requirements) ? activeProblem.requirements : []).map((req, i) => (
               <li key={i} className="text-xs text-zinc-300 flex items-start gap-2 bg-zinc-950 p-2 rounded border border-zinc-800">
                 <span className="text-blue-500 font-bold mt-0.5">•</span> {req}
               </li>

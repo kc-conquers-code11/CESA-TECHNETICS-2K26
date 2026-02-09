@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import Editor from "@monaco-editor/react";
-import { Loader2, X, Cpu, AlertTriangle, Eye, Trophy, RefreshCw, Clock, FastForward, Workflow, Code, ListChecks, Maximize2 } from 'lucide-react';
+import { Loader2, X, Cpu, AlertTriangle, Eye, Trophy, RefreshCw, Clock, FastForward, Workflow, Code, ListChecks, Maximize2, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import ReactFlow, { Background, Controls, ReactFlowProvider, Handle, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// --- FLOWCHART NODE COMPONENTS ---
+// --- FLOWCHART NODE COMPONENTS (Visualizer) ---
 const StartNode = ({ data }: any) => (
     <div className="w-[100px] h-[50px] rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center text-xs font-bold text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
         {data.label}
@@ -51,7 +51,7 @@ const nodeTypes = {
     default: ProcessNode
 };
 
-// --- VISUAL FLOWCHART VIEWER ---
+// --- FLOWCHART VIEWER WRAPPER ---
 const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
     return (
         <div className="h-[400px] w-full border border-zinc-700 rounded-xl bg-zinc-900 overflow-hidden relative">
@@ -91,12 +91,13 @@ const formatDuration = (seconds: any) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
+    
     if (h > 0) return `${h}h ${m}m ${s}s`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
 };
 
-// --- COMPONENT ---
+// --- MAIN LEADERBOARD COMPONENT ---
 export const Leaderboard = () => {
     const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -106,13 +107,13 @@ export const Leaderboard = () => {
     const [inspectedUser, setInspectedUser] = useState<any>(null);
     const [inspectionLoading, setInspectionLoading] = useState(false);
 
-    // --- 1. FETCH LEADERBOARD DATA ---
+    // --- 1. FETCH DATA ---
     const fetchData = async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
                 .from('leaderboard')
-                .select('*, profiles(full_name, team_name, email)')
+                .select('*')
                 .order('overall_score', { ascending: false });
 
             if (error) throw error;
@@ -163,7 +164,7 @@ export const Leaderboard = () => {
     return (
         <div className="w-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             
-            {/* HEADER & REFRESH */}
+            {/* HEADER */}
             <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <Trophy className="w-6 h-6 text-yellow-500" /> Live Leaderboard
@@ -180,16 +181,17 @@ export const Leaderboard = () => {
                         <tr>
                             <th className="p-4 pl-6">Rank</th>
                             <th className="p-4">Participant Details</th>
-                            <th className="p-4 text-center">R1 Score</th>
-                            <th className="p-4 text-center">R2 Score</th>
-                            <th className="p-4 text-center">R3 Score</th>
+                            <th className="p-4 text-center">R1 (MCQ)</th>
+                            <th className="p-4 text-center">R2 (Flow)</th>
+                            <th className="p-4 text-center">R3 (Code)</th>
                             <th className="p-4 text-right pr-6">Total / Time</th>
                             <th className="p-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/50">
                         {leaderboardData.map((entry, i) => (
-                            <tr key={entry.id} className="hover:bg-white/5 transition-colors group">
+                            <tr key={entry.user_id || i} className="hover:bg-white/5 transition-colors group">
+                                
                                 {/* RANK */}
                                 <td className="p-4 pl-6">
                                     <span className={cn(
@@ -204,47 +206,64 @@ export const Leaderboard = () => {
                                 <td className="p-4">
                                     <div className="flex flex-col gap-0.5">
                                         <span className="text-base font-bold text-white group-hover:text-red-400 transition-colors">
-                                            {/* @ts-ignore */}
-                                            {entry.profiles?.full_name || "Unknown User"}
+                                            {entry.full_name || "Unknown User"}
                                         </span>
                                         <span className="text-xs text-zinc-500 flex items-center gap-1">
                                             {entry.user_email}
                                         </span>
                                         <span className="inline-flex mt-1 self-start items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wide">
-                                            {/* @ts-ignore */}
-                                            {entry.profiles?.team_name || "NO TEAM"}
+                                            {entry.team_name || "NO TEAM"}
                                         </span>
                                     </div>
                                 </td>
 
-                                {/* SCORES */}
+                                {/* ROUND 1 SCORE */}
                                 <td className="p-4 text-center">
                                     <div className="font-mono text-zinc-300">{entry.round1_score}</div>
-                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round1_time)}</div>
-                                </td>
-                                <td className="p-4 text-center">
-                                    <div className="font-mono text-zinc-300">{entry.round2_score}</div>
-                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round2_time)}</div>
-                                </td>
-                                <td className="p-4 text-center">
-                                    <div className="font-mono text-zinc-300">{entry.round3_score}</div>
-                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1"><Clock className="w-2 h-2" /> {formatTime(entry.round3_time)}</div>
+                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                        <Clock className="w-2 h-2" /> {formatTime(entry.round1_time)}
+                                    </div>
                                 </td>
 
-                                {/* TOTAL & TIME */}
+                                {/* ROUND 2 SCORE */}
+                                <td className="p-4 text-center">
+                                    <div className="font-mono text-zinc-300">{entry.round2_score}</div>
+                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                        <Clock className="w-2 h-2" /> {formatTime(entry.round2_time)}
+                                    </div>
+                                </td>
+
+                                {/* ROUND 3 SCORE */}
+                                <td className="p-4 text-center">
+                                    <div className="font-mono text-zinc-300">{entry.round3_score}</div>
+                                    <div className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+                                        <Clock className="w-2 h-2" /> {formatTime(entry.round3_time)}
+                                    </div>
+                                </td>
+
+                                {/* TOTAL SCORE & TIME */}
                                 <td className="p-4 text-right pr-6">
                                     <div className="flex flex-col items-end gap-0.5">
-                                        <div className="font-mono font-bold text-green-400 text-lg leading-none">{entry.overall_score ?? 0}</div>
+                                        <div className="font-mono font-bold text-green-400 text-lg leading-none">
+                                            {entry.overall_score ?? 0}
+                                        </div>
                                         <div className="flex items-center gap-1.5 text-xs text-zinc-500" title="Total Time Taken">
                                             <FastForward className="w-3 h-3 text-zinc-600" />
-                                            <span className="font-mono font-medium text-zinc-400">{formatDuration(entry.total_time_seconds)}</span>
+                                            <span className="font-mono font-medium text-zinc-400">
+                                                {formatDuration(entry.total_time_seconds)}
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
 
                                 {/* ACTIONS */}
                                 <td className="p-4 text-right">
-                                    <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" onClick={() => inspectUser(entry.user_id)}>
+                                    <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" 
+                                        onClick={() => inspectUser(entry.user_id)}
+                                    >
                                         <Eye className="w-4 h-4" />
                                     </Button>
                                 </td>
@@ -296,7 +315,7 @@ export const Leaderboard = () => {
                                             </div>
                                         </div>
                                         <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                                            <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Estimated Score</div>
+                                            <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Score</div>
                                             <div className="text-2xl font-mono font-bold text-white">
                                                 {inspectedUser?.coding?.problem_set 
                                                     ? (inspectedUser.coding.problem_set.reduce((acc: number, curr: any) => acc + (parseFloat(curr.runResult?.score) || 0), 0) / 2)
@@ -307,6 +326,7 @@ export const Leaderboard = () => {
                                     </div>
 
                                     <div className="space-y-8">
+                                        {/* CODING SOLUTIONS (Supports problem_set Array) */}
                                         {inspectedUser?.coding?.problem_set && Array.isArray(inspectedUser.coding.problem_set) && inspectedUser.coding.problem_set.length > 0 ? (
                                             inspectedUser.coding.problem_set.map((prob: any, idx: number) => (
                                                 <div key={idx} className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950">
@@ -354,7 +374,7 @@ export const Leaderboard = () => {
                                     </div>
                                 </TabsContent>
 
-                                {/* FLOWCHART TAB (WITH VIEWER) */}
+                                {/* FLOWCHART TAB (WITH VISUALIZER) */}
                                 <TabsContent value="flowchart" className="flex-1">
                                     <div className="space-y-4">
                                         <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6">

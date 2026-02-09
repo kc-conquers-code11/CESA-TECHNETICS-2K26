@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import { Leaderboard as LeaderboardTab } from '@/components/competition/LeaderboardTab';
+import { Leaderboard as LeaderboardTab } from '../components/competition/LeaderboardTab'; 
 import ReactFlow, {
     Background,
     Controls,
@@ -10,13 +10,14 @@ import ReactFlow, {
     Position
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import Editor from "@monaco-editor/react"; // Added for Inspection Modal
 
 import {
     Shield, RefreshCw, Play, Ban, Search,
     Plus, Trash2, AlertTriangle, LogOut,
     Activity, Workflow, CheckCircle2, Code, Trophy,
     ListChecks, Settings, Save, Maximize2, BookOpen, Database,
-    Cpu, X
+    Cpu, X, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { AnimatedBackground } from '../components/competition/AnimatedBackground';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Added for Inspection Modal
 
 // --- CONFIGURATION ---
 const ADMIN_EMAILS = ["admin1@strangertech.in", "kc@strangertech.in", "admin@cesa.in"];
@@ -94,7 +96,7 @@ interface InspectionData {
         timestamp: string;
     } | null;
     coding?: {
-        problem_set?: any[]; // Updated to support array
+        problem_set?: any[];
         total_score?: number;
         status?: string;
         timestamp: string;
@@ -129,14 +131,127 @@ const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
     );
 };
 
-// --- INSPECTION MODAL (Kept for Monitor Tab Use) ---
+// --- INSPECTION MODAL (For Monitor Tab) ---
 function InspectionModal({ user, loading, data, onClose }: { user: Participant; loading: boolean; data: InspectionData | null; onClose: () => void }) {
-    // ... (This modal is used by the Monitor tab's eye icon, keeping it minimal or redirecting to Leaderboard logic is better, but keeping here for safety of Monitor tab functionality)
-    // NOTE: Ideally, Monitor Tab should also use the new Leaderboard Dialog logic, but keeping this simple for now.
-    return null; // Monitor tab Inspection logic is handled in the main component below or you can re-import Leaderboard's logic.
-    // For now, I will assume you want the Monitor tab's "Inspect" button to work.
-    // If you moved all inspection logic to Leaderboard component, then Monitor tab might need updating.
-    // Assuming Monitor tab still needs this modal:
+    return (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-zinc-950 border border-zinc-800 w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+
+                {/* Header */}
+                <div className="p-6 border-b border-zinc-800 bg-zinc-900/50 flex justify-between items-center shrink-0">
+                    <div>
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Activity className="w-5 h-5 text-blue-500" /> Inspection Mode</h2>
+                        <p className="text-zinc-400 text-sm mt-1 font-mono">{user.email} <span className="text-zinc-600">|</span> ID: {user.user_id.slice(0, 8)}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-zinc-800"><X className="w-6 h-6 text-zinc-400" /></Button>
+                </div>
+
+                {/* Content Layout */}
+                <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+
+                    {/* Left Sidebar */}
+                    <div className="w-full md:w-64 bg-zinc-900/30 border-r border-zinc-800 p-4 space-y-6 overflow-y-auto shrink-0">
+                        <div className="space-y-3">
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Status</p>
+                                <p className={cn("text-lg font-bold capitalize", user.status === 'frozen' ? 'text-orange-500' : 'text-green-500')}>{user.status}</p>
+                            </div>
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Tab Switches</p>
+                                <p className="text-lg font-bold text-red-500">{user.tab_switches}</p>
+                            </div>
+                            <div className="bg-black/40 p-3 rounded-lg border border-zinc-800">
+                                <p className="text-[10px] text-zinc-500 uppercase font-bold">Current Round</p>
+                                <p className="text-lg font-bold text-blue-400 capitalize">{user.current_round_slug}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main View Area */}
+                    <div className="flex-1 overflow-y-auto p-6 bg-black/20 custom-scrollbar">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center h-full text-zinc-500"><RefreshCw className="w-10 h-10 animate-spin mb-4" /><p>Retrieving classified logs...</p></div>
+                        ) : (
+                            <Tabs defaultValue="coding" className="w-full h-full flex flex-col">
+                                <TabsList className="bg-zinc-900 border border-zinc-800 w-fit mb-6">
+                                    <TabsTrigger value="coding" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"><Code className="w-4 h-4 mr-2" /> Coding</TabsTrigger>
+                                    <TabsTrigger value="flowchart" className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black"><Workflow className="w-4 h-4 mr-2" /> Flowchart</TabsTrigger>
+                                    <TabsTrigger value="mcq" className="data-[state=active]:bg-green-600 data-[state=active]:text-white"><ListChecks className="w-4 h-4 mr-2" /> MCQ</TabsTrigger>
+                                </TabsList>
+
+                                {/* CODING TAB */}
+                                <TabsContent value="coding" className="space-y-6 flex-1">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                                            <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Coding Status</div>
+                                            <div className={cn("text-lg font-bold capitalize", data?.coding?.status === 'completed' ? "text-green-400" : "text-yellow-500")}>
+                                                {data?.coding?.status || "Not Started"}
+                                            </div>
+                                        </div>
+                                        <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
+                                            <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Total Score</div>
+                                            <div className="text-2xl font-mono font-bold text-white">
+                                                {data?.coding?.problem_set 
+                                                    ? (data.coding.problem_set.reduce((acc: number, curr: any) => acc + (parseFloat(curr.runResult?.score) || 0), 0) / 2)
+                                                    : (data?.coding?.total_score || 0)
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        {data?.coding?.problem_set && Array.isArray(data.coding.problem_set) && data.coding.problem_set.length > 0 ? (
+                                            data.coding.problem_set.map((prob: any, idx: number) => (
+                                                <div key={idx} className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950">
+                                                    <div className="bg-zinc-900/50 px-4 py-3 border-b border-zinc-800 flex justify-between items-center">
+                                                        <span className="font-bold text-zinc-200">Problem {idx + 1}</span>
+                                                        <div className="flex gap-2">
+                                                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded uppercase border border-indigo-500/30">{prob.language || 'N/A'}</span>
+                                                            <span className={cn("text-[10px] px-2 py-1 rounded uppercase font-bold border", prob.runResult?.status === 'Accepted' ? "bg-green-500/10 text-green-400 border-green-500/30" : "bg-red-500/10 text-red-400 border-red-500/30")}>{prob.runResult?.status || 'Not Evaluated'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="h-[300px] relative group">
+                                                        <Editor height="100%" defaultLanguage="javascript" language={prob.language === 'c' || prob.language === 'cpp' ? 'cpp' : prob.language || 'javascript'} value={prob.code || "// No code submitted"} theme="vs-dark" options={{ readOnly: true, minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, domReadOnly: true }} />
+                                                    </div>
+                                                    <div className="bg-black p-4 border-t border-zinc-800 font-mono text-xs">
+                                                        <div className="text-zinc-500 mb-1 uppercase tracking-wider">Execution Log:</div>
+                                                        <div className="text-zinc-300 whitespace-pre-wrap">{prob.runResult?.output || "No output logs."}</div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center p-10 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20 text-zinc-500">No Submission Data</div>
+                                        )}
+                                    </div>
+                                </TabsContent>
+
+                                {/* FLOWCHART TAB */}
+                                <TabsContent value="flowchart" className="flex-1 space-y-4">
+                                    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6">
+                                        <div className="flex-1 bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2">AI Score</p><div className="text-4xl font-bold text-blue-400">{data?.flowchart?.ai_score}<span className="text-lg text-zinc-600">/100</span></div></div>
+                                        <div className="flex-[2] bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2 flex items-center gap-2"><Cpu className="w-3 h-3" /> AI Feedback</p><p className="text-zinc-300 text-sm leading-relaxed">{data?.flowchart?.ai_feedback || "No feedback generated."}</p></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-zinc-500 uppercase font-bold flex items-center gap-2"><Maximize2 className="w-3 h-3" /> Visual Replica</p>
+                                        <FlowchartViewer nodes={Array.isArray(data?.flowchart?.nodes) ? data.flowchart.nodes : []} edges={Array.isArray(data?.flowchart?.edges) ? data.flowchart.edges : []} />
+                                    </div>
+                                </TabsContent>
+
+                                {/* MCQ TAB */}
+                                <TabsContent value="mcq">
+                                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                                        <h3 className="text-lg font-bold text-white mb-4">MCQ Results</h3>
+                                        <div className="text-4xl font-mono font-bold text-indigo-400">{data?.mcq?.score || 0} <span className="text-lg text-zinc-600">/ Total</span></div>
+                                        <div className="mt-6 bg-black/40 p-4 rounded-lg border border-zinc-800 font-mono text-xs text-zinc-400 whitespace-pre-wrap max-h-[300px] overflow-auto">{JSON.stringify(data?.mcq?.answers, null, 2)}</div>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 // --- MAIN COMPONENT ---
@@ -150,12 +265,12 @@ export default function AdminPanel() {
     const [searchQuery, setSearchQuery] = useState('');
 
     const [config, setConfig] = useState({ mcq: '15', flowchart: '30', coding: '45' });
-
+    
     // Inspection State (For Monitor Tab)
     const [selectedUser, setSelectedUser] = useState<Participant | null>(null);
     const [inspectionData, setInspectionData] = useState<InspectionData | null>(null);
     const [loadingInspection, setLoadingInspection] = useState(false);
-
+    
     const [questionsTab, setQuestionsTab] = useState<'mcq' | 'flowchart' | 'coding'>('mcq');
 
     const [newQ, setNewQ] = useState<any>({
@@ -274,6 +389,33 @@ export default function AdminPanel() {
         toast.success("Problem Activated!");
         setFlowchartProblems(prev => prev.map(fp => ({ ...fp, is_active: fp.id === id })));
     };
+
+    const inspectUser = async (user: Participant) => {
+        setSelectedUser(user);
+        setLoadingInspection(true);
+        setInspectionData(null);
+
+        try {
+            const [codingRes, flowchartRes, mcqRes] = await Promise.all([
+                supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
+                supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
+                supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).maybeSingle()
+            ]);
+
+            setInspectionData({
+                coding: codingRes.data,
+                flowchart: flowchartRes.data,
+                mcq: mcqRes.data
+            });
+        } catch (e) {
+            console.error("Inspection Error:", e);
+            toast.error("Failed to load user data");
+        } finally {
+            setLoadingInspection(false);
+        }
+    };
+
+    const closeInspection = () => { setSelectedUser(null); setInspectionData(null); };
 
     const consolidateSubmissions = async () => {
         if (!confirm("⚠️ SYNC FINAL SUBMISSIONS? This will aggregate data for users who finished all rounds into the 'submissions' table.")) return;
@@ -425,7 +567,7 @@ export default function AdminPanel() {
                 {/* ======================= MONITOR TAB ======================= */}
                 {activeTab === 'monitor' && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        {/* Stats & Search (Kept as is) */}
+                        {/* Stats & Search */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[{ label: 'Active', count: participants.filter(p => p.status === 'active').length, color: 'text-green-500' },
                             { label: 'Frozen', count: participants.filter(p => p.status === 'frozen').length, color: 'text-orange-500' },
@@ -479,6 +621,12 @@ export default function AdminPanel() {
                                                     <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'flowchart')} className={cn("h-7 w-7", p.current_round_slug === 'flowchart' ? "bg-yellow-600 text-black shadow-lg" : "text-zinc-500 hover:text-yellow-400 hover:bg-yellow-900/20")} title="Move to Flowchart"><Workflow className="w-4 h-4" /></Button>
                                                     <Button size="icon" variant="ghost" onClick={() => moveUserToRound(p.user_id, 'coding')} className={cn("h-7 w-7", p.current_round_slug === 'coding' ? "bg-purple-600 text-white shadow-lg" : "text-zinc-500 hover:text-purple-400 hover:bg-purple-900/20")} title="Move to Coding"><Code className="w-4 h-4" /></Button>
                                                 </div>
+                                                
+                                                {/* RESTORED: VIEW / INSPECT BUTTON */}
+                                                <Button size="sm" variant="ghost" onClick={() => inspectUser(p)} className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" title="Inspect">
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+
                                                 {p.status === 'frozen' ? (
                                                     <Button size="sm" onClick={() => handleUserAction('unfreeze', p.user_id)} className="bg-green-700 hover:bg-green-600 text-white h-8 text-xs font-bold">Resume</Button>
                                                 ) : (
@@ -661,6 +809,16 @@ export default function AdminPanel() {
                 {/* ======================= LEADERBOARD TAB (UPDATED) ======================= */}
                 {activeTab === 'leaderboard' && (
                     <LeaderboardTab />
+                )}
+
+                {/* --- MONITOR TAB INSPECTION MODAL --- */}
+                {selectedUser && (
+                    <InspectionModal 
+                        user={selectedUser} 
+                        loading={loadingInspection} 
+                        data={inspectionData} 
+                        onClose={closeInspection} 
+                    />
                 )}
 
             </div>
