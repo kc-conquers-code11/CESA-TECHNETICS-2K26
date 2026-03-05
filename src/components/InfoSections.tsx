@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import Sponsors from './Sponsors';
 
 const InfoSections = () => {
   const handleRegistration = () => {
@@ -21,8 +20,8 @@ const InfoSections = () => {
         viewport={{ once: true }}
         className="max-w-7xl mx-auto border-2 border-teal-500/30 rounded-3xl p-8 md:p-16 bg-[#021b1c] relative overflow-hidden text-center md:text-left"
       >
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-teal-500 to-transparent"></div>
-
+        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-teal-500 to-transparent"></div>
+        
         <div className="flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="flex-1">
             <div className="inline-block px-4 py-1 bg-teal-900/40 text-teal-300 border border-teal-700 rounded-full text-[10px] font-black tracking-[0.3em] mb-6">
@@ -98,8 +97,8 @@ const InfoSections = () => {
           </motion.div>
 
           {/* Discord Visual */}
-          <div className="h-80 bg-gradient-to-br from-[#042a2b] to-[#021516] border border-[#d4af37]/20 rounded-2xl flex items-center justify-center shadow-2xl relative overflow-hidden group">
-
+          <div className="h-80 bg-linear-to-br from-[#042a2b] to-[#021516] border border-[#d4af37]/20 rounded-2xl flex items-center justify-center shadow-2xl relative overflow-hidden group">
+            
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
 
             <div className="text-center z-10 transition-transform group-hover:scale-110 duration-500">

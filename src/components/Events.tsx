@@ -126,7 +126,7 @@ const TwinkleOverlay = () => (
 const EventModal = ({ event, onClose }: { event: Event; onClose: () => void }) => (
   <AnimatePresence>
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4 md:p-8"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     >
       <motion.div
@@ -142,9 +142,9 @@ const EventModal = ({ event, onClose }: { event: Event; onClose: () => void }) =
         transition={{ type: 'spring', stiffness: 260, damping: 22 }}
       >
         <TwinkleOverlay />
-        <div className="h-1 w-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
+        <div className="h-1 w-full bg-linear-to-r from-transparent via-[#d4af37] to-transparent" />
 
-        <div className="relative w-full h-52 bg-gradient-to-br from-black/80 to-[#021516] flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-52 bg-linear-to-br from-black/80 to-[#021516] flex items-center justify-center overflow-hidden">
           {event.image
             ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-70" />
             : (
@@ -154,7 +154,7 @@ const EventModal = ({ event, onClose }: { event: Event; onClose: () => void }) =
               </div>
             )
           }
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#021c1e] to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-[#021c1e] to-transparent" />
           <span className={`absolute top-4 left-4 text-[10px] font-bold tracking-widest px-3 py-1 rounded-full border ${tagColors[event.tag] ?? ''}`}>
             {event.tag}
           </span>
@@ -236,7 +236,7 @@ const FlipCard = ({ event, index, onViewDetails }: { event: Event; index: number
           <span className={`absolute top-4 right-4 z-10 text-[10px] font-bold tracking-widest px-2 py-1 rounded border ${tagColors[event.tag] ?? ''}`}>
             {event.tag}
           </span>
-          <div className="w-full flex-1 bg-gradient-to-br from-black/70 to-[#021516] flex items-center justify-center relative overflow-hidden">
+          <div className="w-full flex-1 bg-linear-to-br from-black/70 to-[#021516] flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[#d4af37]/5" />
             {event.image
               ? <img src={event.image} alt={event.title} className="w-full h-full object-cover opacity-80" />
@@ -268,7 +268,7 @@ const FlipCard = ({ event, index, onViewDetails }: { event: Event; index: number
             {event.title}
           </h3>
           <div className="h-px w-full bg-[#d4af37]/20 mb-4" />
-          <p className="text-sm text-gray-300 leading-relaxed flex-grow">{event.shortDesc}</p>
+          <p className="text-sm text-gray-300 leading-relaxed grow">{event.shortDesc}</p>
 
           <div className="mt-4 pt-4 border-t border-[#d4af37]/15">
             <div className="flex justify-between items-center mb-4">

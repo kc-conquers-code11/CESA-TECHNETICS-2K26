@@ -57,7 +57,7 @@ export default function SponsorBanner() {
       </motion.div>
 
       {/* Magical particles */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle,rgba(255,255,255,0.2)_1px,transparent_1px)] bg-[size:30px_30px] opacity-10"></div>
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle,rgba(255,255,255,0.2)_1px,transparent_1px)] bg-size-[30px_30px] opacity-10"></div>
 
     </section>
   )

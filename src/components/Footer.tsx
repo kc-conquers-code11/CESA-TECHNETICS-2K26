@@ -26,7 +26,8 @@ interface Footprint {
   isRight: boolean;
 }
 
-const WalkingFootprints = () => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const WalkingFootprints = ({ containerRef }: { containerRef?: React.RefObject<HTMLElement> }) => {
   const [prints, setPrints] = useState<Footprint[]>([]);
   const counterRef = useRef(0);
   const posRef = useRef({ x: 10, y: 50 });

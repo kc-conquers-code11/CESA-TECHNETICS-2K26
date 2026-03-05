@@ -88,7 +88,7 @@ const MaraudersMapOverlay = () => {
       {isHovered && (
         <div className="absolute inset-0 rounded-3xl pointer-events-none" style={{ boxShadow: 'inset 0 0 60px rgba(212,175,55,0.12), 0 0 60px rgba(212,175,55,0.15)' }} />
       )}
-      <div className="absolute inset-0 pointer-events-none border-[10px] border-[#021516] rounded-3xl" />
+      <div className="absolute inset-0 pointer-events-none border-10 border-[#021516] rounded-3xl" />
     </div>
   );
 };
