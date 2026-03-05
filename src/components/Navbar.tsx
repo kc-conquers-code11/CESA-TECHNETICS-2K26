@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 import logo from '../assets/technetics-head.svg';
 
@@ -125,18 +125,59 @@ const Navbar = () => {
       {/* Controls: Audio Toggle, Portal Button, Mobile Menu */}
       <div className="flex items-center gap-4">
         
-        {/* Audio Toggle Button */}
-        <button 
-          onClick={toggleAudio}
-          className="text-[#d4af37] hover:text-[#FFD05A] transition-colors hover:scale-110 transform duration-300"
-          title={isPlaying ? "Mute Background Music" : "Play Background Music"}
-        >
-          {isPlaying ? <Volume2 size={24} /> : <VolumeX size={24} />}
-        </button>
+<div className="relative flex flex-col items-center">
+    
+    {/* 1. Audio Button with Pulse & Wobble */}
+    <motion.button
+      onClick={toggleAudio}
+      className="relative z-10 text-[#d4af37] hover:text-[#FFD05A] p-2 transition-colors outline-none cursor-pointer"
+      title={isPlaying ? "Mute Background Music" : "Play Background Music"}
+      
+      // Wobble animation every 4 seconds if music is NOT playing
+      animate={!isPlaying ? {
+        rotate: [0, -10, 10, -10, 10, 0],
+      } : { rotate: 0 }}
+      transition={!isPlaying ? {
+        duration: 0.5,
+        repeat: Infinity,
+        repeatDelay: 4 
+      } : {}}
+    >
+      {/* 2. The Breathing Glow Effect (Behind the icon) */}
+      {!isPlaying && (
+        <motion.span
+          animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+          className="absolute inset-0 rounded-full bg-[#d4af37]/40 -z-10"
+        />
+      )}
 
-        <button className="hidden md:block px-5 py-2 border border-[#d4af37]/50 text-[#d4af37] text-[10px] font-black tracking-widest rounded-lg hover:bg-[#d4af37] hover:text-[#021516] transition-all uppercase invisible">
-          Portal
-        </button>
+      {isPlaying ? <Volume2 size={24} /> : <VolumeX size={24} />}
+    </motion.button>
+
+    {/* 3. Tooltip positioned BELOW */}
+    <AnimatePresence>
+      {!isPlaying && (
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -5, scale: 0.9 }}
+          className="absolute top-12 px-3 py-1.5 bg-[#d4af37] text-black text-[10px] font-bold rounded-md shadow-[0_0_15px_rgba(212,175,55,0.4)] whitespace-nowrap pointer-events-none z-20"
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          {/* Tooltip Arrow (Points UP) */}
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#d4af37] rotate-45" />
+          TAP FOR MUSIC
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+<button 
+  disabled
+  className="hidden md:block px-5 py-2 border border-gray-500/50 text-gray-500 text-[10px] font-black tracking-widest rounded-lg cursor-not-allowed grayscale opacity-50 transition-all uppercase"
+>
+  Portal
+</button>
 
         <div className="md:hidden flex items-center">
           <button onClick={() => setMenuOpen(!menuOpen)} className="text-[#d4af37] hover:text-white transition-colors">
