@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 // Import the video asset directly to ensure Vite handles the path correctly
-import heroVideo from '../assets/hero.mp4'; 
+import heroVideo from '../assets/hero4.mp4'; 
 
 const TARGET_DATE = new Date("2026-03-17T00:00:00").getTime();
 
