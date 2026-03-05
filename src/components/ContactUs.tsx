@@ -122,7 +122,7 @@ const FAQCard = ({ faq, index }: { faq: typeof faqs[0]; index: number }) => {
 
         {/* Character avatar with glow on open */}
         <div
-          className="flex-shrink-0 w-16 h-16 rounded-full overflow-hidden"
+          className="shrink-0 w-16 h-16 rounded-full overflow-hidden"
           style={{
             filter: open
               ? `drop-shadow(0 0 10px ${faq.glowColor}) drop-shadow(0 0 20px ${faq.glowColor}88)`
@@ -142,6 +142,7 @@ const ContactForm = () => {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubmit = () => {
     if (form.name && form.email && form.subject && form.message) {
       const to = 'technetics2k26@gmail.com'; // 👈 replace with your Gmail
@@ -260,7 +261,7 @@ const SidebarFAQ = () => {
             <motion.span
               animate={{ rotate: openIdx === i ? 180 : 0 }}
               transition={{ duration: 0.2 }}
-              className="text-gray-400 text-xs ml-2 flex-shrink-0"
+              className="text-gray-400 text-xs ml-2 flex-0"
             >
               ▼
             </motion.span>
@@ -343,7 +344,7 @@ const ContactUs = () => {
           <h2 className="text-4xl md:text-5xl text-[#d4af37] mb-3" style={{ fontFamily: "'Cinzel', serif" }}>
             FAQs
           </h2>
-          <div className="h-px w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mx-auto mb-2" />
+          <div className="h-px w-24 bg-linear-to-r from-transparent via-[#d4af37] to-transparent mx-auto mb-2" />
           <p className="text-gray-500 text-sm uppercase tracking-widest">Click a card to reveal the answer</p>
         </motion.div>
 

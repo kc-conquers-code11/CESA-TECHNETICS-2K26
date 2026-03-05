@@ -12,10 +12,10 @@ const WhatIsTechnetics = () => (
       <h2 className="text-4xl md:text-5xl text-[#d4af37] mb-10" style={{ fontFamily: "'Cinzel', serif" }}>
         What is Technetics?
       </h2>
-      <div className="border border-[#d4af37]/20 rounded-2xl p-8 md:p-12 bg-gradient-to-br from-[#031d1f] to-[#021516] shadow-2xl relative overflow-hidden group">
+      <div className="border border-[#d4af37]/20 rounded-2xl p-8 md:p-12 bg-linear-to-br from-[#031d1f] to-[#021516] shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:bg-[#d4af37]/10" />
         <h3 className="text-2xl font-bold text-teal-100 mb-6 flex items-center gap-3">
-          <span className="h-[1px] w-8 bg-teal-500" />
+          <span className="h-px w-8 bg-teal-500" />
           An Arcane-Tech Convergence
         </h3>
         <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-4xl">

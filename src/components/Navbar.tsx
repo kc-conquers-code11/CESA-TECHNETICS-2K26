@@ -51,7 +51,7 @@ const Navbar = () => {
             }
           }, 40000);
 
-        } catch (err) {
+        } catch {
           // If the browser blocks autoplay because the user hasn't clicked the page yet,
           // it catches the error here instead of crashing your app.
           console.warn("Autoplay prevented by browser. User must interact first.");
@@ -103,7 +103,7 @@ const Navbar = () => {
       <audio ref={audioRef} src={bgMusic} preload="auto" onEnded={() => setIsPlaying(false)} onPause={() => setIsPlaying(false)} onPlay={() => setIsPlaying(true)}/>
 
       {/* Logo */}
-      <div className="flex-shrink-0 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+      <div className="shrink-0 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
         <img src={logo} alt="Technetics" className="h-10 w-auto transition-transform group-hover:scale-110" />
       </div>
 
@@ -117,7 +117,7 @@ const Navbar = () => {
             className="px-4 py-2 text-xs font-bold tracking-widest text-gray-400 hover:text-[#d4af37] transition-all duration-300 relative group uppercase"
           >
             {link.label}
-            <span className="absolute inset-x-0 bottom-1 h-[1px] bg-[#d4af37] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
+            <span className="absolute inset-x-0 bottom-1 h-px bg-[#d4af37] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center"></span>
           </a>
         ))}
       </div>
