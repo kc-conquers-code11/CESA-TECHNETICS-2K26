@@ -115,7 +115,7 @@ const Footer = () => {
       <video
         autoPlay loop muted playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
-        src="/hero3.mp4"
+        src="/footer.mp4"
       />
 
       {/* Parchment overlay on top of video */}

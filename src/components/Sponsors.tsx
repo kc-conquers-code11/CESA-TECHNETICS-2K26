@@ -191,7 +191,7 @@ const Sponsors = () => (
           {allScrolling.map((sponsor, i) => (
   <div
     key={i}
-    className="flex-shrink-0 h-28 w-44 flex items-center justify-center border-r border-[#d4af37]/15 bg-[#031d1f]/60 hover:bg-[#031d1f] transition-all cursor-pointer group"
+    className="shrink-0 h-28 w-44 flex items-center justify-center border-r border-[#d4af37]/15 bg-[#031d1f]/60 hover:bg-[#0B3D2E]/80 transition-all cursor-pointer group"
   >
     <img
       src={sponsor.logo}
@@ -212,7 +212,6 @@ const Sponsors = () => (
 ))}
         </motion.div>
       </div>
-
     </div>
   </section>
 );

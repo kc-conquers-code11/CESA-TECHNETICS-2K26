@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Volume2, VolumeX } from 'lucide-react';
 import logo from '../assets/technetics-head.svg';
+
+// Import your audio file
+import bgMusic from '../assets/bgscore.ogg'; 
 
 const navLinks = [
   { label: "About",      href: "#about" },
@@ -14,11 +18,54 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Audio States
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Scroll Handler
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // NEW: 40-Second Autoplay Handler
+  useEffect(() => {
+    let stopTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const attemptAutoPlay = async () => {
+      if (audioRef.current) {
+        try {
+          audioRef.current.volume = 0.5; // Set a nice background volume (50%)
+          
+          // Attempt to play the audio
+          await audioRef.current.play();
+          setIsPlaying(true);
+
+          // If play is successful, set a timer to stop it after 40 seconds (40000 ms)
+          stopTimer = setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+              setIsPlaying(false);
+            }
+          }, 40000);
+
+        } catch (err) {
+          // If the browser blocks autoplay because the user hasn't clicked the page yet,
+          // it catches the error here instead of crashing your app.
+          console.warn("Autoplay prevented by browser. User must interact first.");
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    attemptAutoPlay();
+
+    // Cleanup the timer if the user leaves the page before 40 seconds
+    return () => {
+      if (stopTimer) clearTimeout(stopTimer);
+    };
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -27,6 +74,19 @@ const Navbar = () => {
     const target = document.querySelector(href);
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Toggle Audio Function (Manual override)
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(err => console.error("Audio play failed:", err));
+        audioRef.current.volume = 0.5; 
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
@@ -39,6 +99,9 @@ const Navbar = () => {
         isScrolled ? 'bg-[#021516]/80 backdrop-blur-lg border-b border-[#d4af37]/20 py-3' : 'bg-transparent'
       }`}
     >
+      {/* Hidden Audio Element - Notice loop is removed since we only want 40s! */}
+      <audio ref={audioRef} src={bgMusic} preload="auto" onEnded={() => setIsPlaying(false)} onPause={() => setIsPlaying(false)} onPlay={() => setIsPlaying(true)}/>
+
       {/* Logo */}
       <div className="flex-shrink-0 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
         <img src={logo} alt="Technetics" className="h-10 w-auto transition-transform group-hover:scale-110" />
@@ -59,9 +122,19 @@ const Navbar = () => {
         ))}
       </div>
 
-      {/* Portal Button + Mobile Menu Toggle */}
+      {/* Controls: Audio Toggle, Portal Button, Mobile Menu */}
       <div className="flex items-center gap-4">
-        <button className="hidden md:block px-5 py-2 border border-[#d4af37]/50 text-[#d4af37] text-[10px] font-black tracking-widest rounded-lg hover:bg-[#d4af37] hover:text-[#021516] transition-all uppercase">
+        
+        {/* Audio Toggle Button */}
+        <button 
+          onClick={toggleAudio}
+          className="text-[#d4af37] hover:text-[#FFD05A] transition-colors hover:scale-110 transform duration-300"
+          title={isPlaying ? "Mute Background Music" : "Play Background Music"}
+        >
+          {isPlaying ? <Volume2 size={24} /> : <VolumeX size={24} />}
+        </button>
+
+        <button className="hidden md:block px-5 py-2 border border-[#d4af37]/50 text-[#d4af37] text-[10px] font-black tracking-widest rounded-lg hover:bg-[#d4af37] hover:text-[#021516] transition-all uppercase invisible">
           Portal
         </button>
 

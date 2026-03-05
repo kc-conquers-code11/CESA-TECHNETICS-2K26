@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 html {
@@ -18,4 +20,25 @@ body {
   overflow-x: hidden;
   background-color: #021516;
   color: white;
+}
+
+@font-face {
+  font-family: "blackchancery";
+  src: url("/src/assets/fonts/BLKCHCRY.TTF") format("truetype");
+}
+
+@font-face {
+  font-family: "harryP";
+  src: url("/src/assets/fonts/harryP.ttf") format("truetype");
+}
+
+::selection {
+  background: #FFD700;
+  -webkit-text-fill-color: #000;
+  text-shadow: none;
+}
+::-moz-selection {
+  background: #FFB702;
+  -webkit-text-fill-color: black;
+  color: black;
 }

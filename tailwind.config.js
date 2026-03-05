@@ -4,8 +4,15 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
-    extend: {},
+   theme: {
+    extend: {
+      fontFamily: {
+        inter: ["Inter", "Manrope", "sans-serif"],
+        manrope: ["manrope", "sans-serif"],
+        harry: ["harryP", "serif"],
+        wizard: ["blackchancery", "serif"],
+      }
+    },
   },
   plugins: [],
 }

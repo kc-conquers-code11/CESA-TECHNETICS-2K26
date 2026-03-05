@@ -1,13 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import React from 'react';
 
 // Import the video asset directly to ensure Vite handles the path correctly
-import heroVideo from '../assets/hero4.mp4'; 
+import heroVideo from '../assets/video/optimized_hero.webm'; 
+import heroVideoMobile from '../assets/video/optimized_hero_mobile.webm'; 
 
-const TARGET_DATE = new Date("2026-03-17T00:00:00").getTime();
+const TARGET_DATE = new Date("2026-03-16T00:00:00").getTime();
 
 const Hero = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // State to control when the text and timer appear
+  const [showContent, setShowContent] = useState(false);
 
   // Logic to calculate the time remaining until the event start date
   const calculateTimeLeft = () => {
@@ -41,6 +46,26 @@ const Hero = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Handle the video loop and content reveal
+  const handleTimeUpdate = () => {
+    if (videoRef.current && videoRef.current.duration) {
+      const video = videoRef.current;
+      
+      const loopStartTime = video.duration - 5; 
+      const revealTime = 12; 
+      
+      // 1. Reveal content when we hit the reveal time
+      if (video.currentTime >= revealTime && !showContent) {
+        setShowContent(true);
+      }
+
+      // 2. Loop logic: if we reach the end of the video, jump back 5 seconds
+      if (video.currentTime >= video.duration - 0.1) {
+        video.currentTime = loopStartTime;
+      }
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden pt-20">
       
@@ -48,23 +73,29 @@ const Hero = () => {
       <div className="absolute inset-0 z-0 bg-black">
         <video 
           ref={videoRef}
-          src={heroVideo}
           autoPlay 
-          loop 
           muted 
           playsInline 
           preload="auto"
-          // Removed mix-blend-overlay and adjusted opacity for better visibility
+          onTimeUpdate={handleTimeUpdate}
           className="w-full h-full object-cover opacity-70"
-        />
-        {/* Dark Gradient Overlay to ensure text readability */}
-        <div className="absolute inset-0 z-20 bg-gradient-to-b from-[#021516]/80 via-[#021516]/40 to-[#021516]"></div>
+        >
+          <source src={heroVideoMobile} type="video/webm" media="(max-width: 768px)" />
+          <source src={heroVideo} type="video/webm" />
+        </video>
+        <div className="absolute inset-0 z-20 bg-linear-to-b from-[#021516]/80 via-[#021516]/40 to-[#021516]"></div>
       </div>
 
-      <div className="relative z-30 text-center px-4 flex flex-col items-center">
+      {/* We use pointer-events-none when hidden so users can't accidentally click 
+        invisible buttons or select invisible text before it reveals.
+      */}
+      <div className={`relative z-30 text-center px-4 flex flex-col items-center ${showContent ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        
         {/* Main Event Title */}
         <motion.h1 
-          initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1 }}
+          initial={{ y: 30, opacity: 0 }} 
+          animate={{ y: showContent ? 0 : 30, opacity: showContent ? 1 : 0 }} 
+          transition={{ duration: 1 }}
           className="mb-2 drop-shadow-[0_0_30px_rgba(255,183,0,0.6)]"
           style={{
             fontFamily: "'Harry P', 'Cinzel', serif",
@@ -84,7 +115,9 @@ const Hero = () => {
         </motion.h1>
         
         <motion.p 
-          initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.2 }}
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: showContent ? 0 : 20, opacity: showContent ? 1 : 0 }} 
+          transition={{ duration: 1, delay: showContent ? 0.2 : 0 }}
           style={{
             fontFamily: "'BlackChancery', serif",
             fontWeight: 5,
@@ -100,23 +133,61 @@ const Hero = () => {
           Where Code Meets Magic.
         </motion.p>
 
+        <motion.p 
+          initial={{ y: 20, opacity: 0 }} 
+          animate={{ y: showContent ? 0 : 20, opacity: showContent ? 1 : 0 }} 
+          transition={{ duration: 1, delay: showContent ? 0.2 : 0 }}
+          className="text-2xl md:text-3xl text-teal-100 mb-6 drop-shadow-lg font-manrope font-medium"
+        >
+          March 16-18, 2026  •  Vasantdada Patil Pratishthan’s College of Engineering & Visual Arts, Sion
+        </motion.p>
+
         {/* Professional Countdown Timer Display */}
         <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, delay: 0.6 }}
+          initial={{ scale: 0.9, opacity: 0 }} 
+          animate={{ scale: showContent ? 1 : 0.9, opacity: showContent ? 1 : 0 }} 
+          transition={{ duration: 0.8, delay: showContent ? 0.6 : 0 }}
           className="flex items-center gap-3 md:gap-6 mt-8"
         >
-          {Object.entries(timeLeft).map(([unit, value]) => (
-            <div key={unit} className="flex flex-col items-center group">
-              <div className="relative w-24 h-28 md:w-32 md:h-36 rounded-xl flex items-center justify-center overflow-hidden border border-[#d4af37]/30 bg-[#021516]/60 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.6)] group-hover:border-[#d4af37]/80 group-hover:shadow-[0_0_40px_rgba(212,175,55,0.3)] transition-all duration-500">
-                <span className="relative text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fef08a] via-[#d4af37] to-[#b45309] drop-shadow-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {String(value).padStart(2, '0')}
-                </span>
-              </div>
-              <span className="text-teal-200 mt-4 font-bold text-sm md:text-base uppercase tracking-[0.2em] group-hover:text-[#d4af37] transition-colors">
-                {unit}
-              </span>
-            </div>
-          ))}
+          <div className="flex items-center justify-center gap-6 md:gap-10">
+            {Object.entries(timeLeft).map(([unit, value], index) => (
+              <React.Fragment key={unit}>
+
+                {/* CARD */}
+                <div className="relative w-28 h-28 md:w-36 md:h-36 flex items-center justify-center">
+
+                  {/* GOLD CORNERS */}
+                  <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#d4af37]" />
+                  <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#d4af37]" />
+                  <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#d4af37]" />
+                  <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#d4af37]" />
+
+                  {/* INNER BOX */}
+                  <div className="w-24 h-24 md:w-32 md:h-32 bg-[#F5E6C8] rounded-sm flex flex-col items-center justify-center text-center border-2 border-[#d4af37] shadow-[0_10px_25px_rgba(0,0,0,0.4)]">
+
+                    {/* NUMBER */}
+                    <span className="tracking-tight leading-none text-4xl md:text-5xl font-bold text-[#2d1f14] drop-shadow-[0_3px_2px_rgba(0,0,0,0.4)]">
+                      {String(value).padStart(2, "0")}
+                    </span>
+
+                    {/* UNIT */}
+                    <span className="leading-none mt-[6px] text-lg md:text-xl text-[#6b4f2a] tracking-wide font-[500px] font-blackchancery" style={{ fontFamily: "'BlackChancery', serif"}}>
+                      {unit.charAt(0).toUpperCase() + unit.slice(1)}
+                    </span>
+
+                  </div>
+                </div>
+
+                {/* STAR */}
+                {index < Object.keys(timeLeft).length - 1 && (
+                  <span className="text-[#d4af37] text-4xl md:text-5xl select-none">
+                    ✦
+                  </span>
+                )}
+
+              </React.Fragment>
+            ))}
+          </div>
         </motion.div>
       </div>
     </div>

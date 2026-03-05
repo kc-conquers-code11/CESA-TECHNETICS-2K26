@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import Sponsors from './Sponsors';
 
 const InfoSections = () => {
   const handleRegistration = () => {
@@ -10,8 +11,8 @@ const InfoSections = () => {
   };
 
   return (
-    <div className="bg-[#021516] px-6 md:px-12 py-24 text-white font-sans space-y-32">
-
+    <div className="bg-[#021516] px-6 md:px-12 py-24 text-white font-inter space-y-32">
+      
       {/* 2. Official Registration Portal (Clubly) */}
       <motion.div
         id="clubly"
