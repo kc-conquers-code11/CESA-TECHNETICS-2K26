@@ -65,16 +65,37 @@ const Hero = () => {
         {/* Main Event Title */}
         <motion.h1 
           initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1 }}
-          className="text-6xl md:text-8xl font-black text-[#d4af37] mb-2 drop-shadow-[0_0_20px_rgba(212,175,55,0.5)]"
-          style={{ fontFamily: "'Cinzel', serif" }}
+          className="mb-2 drop-shadow-[0_0_30px_rgba(255,183,0,0.6)]"
+          style={{
+            fontFamily: "'Harry P', 'Cinzel', serif",
+            fontWeight: 400,
+            fontStyle: 'normal',
+            fontSize: 'clamp(64px, 10vw, 128px)',
+            lineHeight: '100%',
+            letterSpacing: '0%',
+            textAlign: 'center',
+            background: 'linear-gradient(90deg, #FFE092 0%, #FFB702 26.68%, #FFC229 42.24%, #FFE6A8 56.25%, #FFD05A 70.39%, #FFB700 81.87%, #FFB804 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
         >
           TECHNETICS 2K26
         </motion.h1>
         
         <motion.p 
           initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.2 }}
-          className="text-2xl md:text-3xl text-teal-100 font-semibold mb-6 drop-shadow-lg"
-          style={{ fontFamily: "'Cinzel', serif" }}
+          style={{
+            fontFamily: "'BlackChancery', serif",
+            fontWeight: 5,
+            fontStyle: 'normal',
+            fontSize: '42px',
+            lineHeight: '100%',
+            letterSpacing: '0%',
+            textAlign: 'center',
+            color: '#B5FFF0',
+          }}
+          className="mb-6 drop-shadow-lg"
         >
           Where Code Meets Magic.
         </motion.p>
