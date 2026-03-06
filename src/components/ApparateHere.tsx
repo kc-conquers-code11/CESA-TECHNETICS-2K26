@@ -22,12 +22,8 @@ const MaraudersMapOverlay = () => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.439832743845!2d72.8724!3d19.0431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7cf2a3f890255%3A0xc328a2a7f5df582d!2sVasantdada%20Patil%20Pratishthan's%20College%20of%20Engineering%20And%20Visual%20Arts!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
-        width="100%" height="100%"
-        style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) brightness(75%) contrast(120%)', pointerEvents: isHovered ? 'none' : 'auto' }}
-        allowFullScreen loading="lazy" className="absolute inset-0"
-      />
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3771.3022145235736!2d72.87585417568701!3d19.050445682148894!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c8c7fb7cb41d%3A0xd2376785df725550!2sVasantdada%20Patil%20Pratishthan&#39;s%20College%20of%20Engineering%20and%20visual%20arts!5e0!3m2!1sen!2sin!4v1772768989337!5m2!1sen!2sin" width="800" height="600" style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) brightness(75%) contrast(120%)', pointerEvents: isHovered ? 'none' : 'auto' }} 
+        allowFullScreen loading="lazy" className="absolute inset-0" ></iframe>
 
       <div
         className="absolute inset-0 pointer-events-none transition-none"
@@ -94,9 +90,13 @@ const MaraudersMapOverlay = () => {
 };
 
 const ApparateHere = () => {
-  const handleMapRedirect = () => {
-    window.open("https://maps.app.goo.gl/YourActualCollegeLink", "_blank");
-  };
+const handleMapRedirect = () => {
+  window.open(
+    "https://maps.app.goo.gl/etGCvsK98hgU1NLE6",
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
 
   return (
     <section id="apparate" className="bg-[#021516] px-6 md:px-12 py-24 text-white">
@@ -120,7 +120,7 @@ const ApparateHere = () => {
             </p>
             <div className="bg-teal-900/20 border border-teal-800/50 p-6 rounded-2xl mb-8">
               <p className="text-teal-300 font-bold flex items-center gap-3 italic">
-                <span className="text-2xl">🏰</span> Arrival window: April 17-19, 2026
+                <span className="text-2xl">🏰</span> Arrival window: March 16-18, 2026
               </p>
             </div>
             <button

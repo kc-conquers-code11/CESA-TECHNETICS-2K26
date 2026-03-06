@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Instagram } from 'lucide-react';
 
 // ── FOOTPRINT SVG ─────────────────────────────────────────────────────────────
 const FootprintSVG = ({ mirrored = false, color = '#5c3a10' }: { mirrored?: boolean; color?: string }) => (
@@ -106,6 +107,33 @@ const WalkingFootprints = () => {
 // ── FOOTER ────────────────────────────────────────────────────────────────────
 const Footer = () => {
   const footerRef = useRef<HTMLElement>(null);
+  
+  const socialLinks = [
+  {
+    label: "Mail",
+    icon: (
+      <a href="mailto:cesaxcsi@gmail.com">
+        <Mail className="w-5 h-5 text-gray-600 hover:text-blue-500 transition-colors" />
+      </a>
+    ),
+  },
+  {
+    label: "Instagram",
+    icon: (
+      <a href="https://www.instagram.com/cesa.csi/" target="_blank" rel="noopener noreferrer">
+        <Instagram className="w-5 h-5 text-gray-600 hover:text-pink-500 transition-colors" />
+      </a>
+    ),
+  },
+  {
+    label: "Discord",
+    icon: (
+      <a href="https://discord.gg/k6QYC64N" target="_blank" rel="noopener noreferrer">
+        <img src="/discord.svg" alt="Discord" className="w-5 h-5 text-gray-600 hover:text-indigo-500 transition-colors" />
+      </a>
+    ),
+  },
+];
 
   return (
     <footer
@@ -175,18 +203,22 @@ const Footer = () => {
               <span>⚡</span> Quick Links
             </h4>
             <ul className="space-y-2 text-sm">
-              {['Home', 'Events', 'Announcements'].map(link => (
-                <li key={link}>
-                  <a
-                    href={link === 'Events' ? '#events' : '#'}
-                    className="transition-all duration-200 hover:font-bold"
-                    style={{ color: '#5c3a10', fontStyle: 'italic' }}
-                  >
-                    — {link}
-                  </a>
-                </li>
-              ))}
-            </ul>
+  {[
+    { name: "Home", href: "#home" },
+    { name: "Events", href: "#events" },
+    { name: "Sponsors", href: "#sponsors" }
+  ].map((link) => (
+    <li key={link.name}>
+      <a
+        href={link.href}
+        className="transition-all duration-200 hover:font-bold"
+        style={{ color: "#5c3a10", fontStyle: "italic" }}
+      >
+        — {link.name}
+      </a>
+    </li>
+  ))}
+</ul>
           </div>
 
           <div>
@@ -197,25 +229,26 @@ const Footer = () => {
               <span>🦉</span> Social
             </h4>
             <div className="flex gap-3">
-              {[
-                { label: 'Facebook', icon: 'f' },
-                { label: 'LinkedIn', icon: 'in' },
-                { label: 'X', icon: '𝕏' },
-                { label: 'Instagram', icon: '◎' },
-              ].map(s => (
-                <div
-                  key={s.label}
-                  title={s.label}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black cursor-pointer transition-all hover:scale-110"
-                  style={{
-                    border: '1.5px solid rgba(92,58,16,0.5)',
-                    background: 'rgba(92,58,16,0.12)',
-                    color: '#3b1f05',
-                  }}
-                >
-                  {s.icon}
-                </div>
-              ))}
+              {socialLinks.map((s) => {
+  const isDiscord = s.label.toLowerCase() === "discord";
+
+  return (
+    <div
+  key={s.label}
+  title={s.label}
+  className={`
+    flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-xs font-black transition-all hover:scale-110
+    border-[1.5px] border-[#5c3a10]/50
+    ${!isDiscord 
+      ? "bg-[#5c3a10]/12 text-[#3b1f05]"
+      : "bg-[#5c3a10]/12 text-[#3b1f05] hover:bg-[#5865F2]"
+    }
+  `}
+>
+  {s.icon}
+</div>
+  );
+})}
             </div>
           </div>
 
