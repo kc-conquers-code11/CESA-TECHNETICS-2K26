@@ -113,7 +113,7 @@ const Footer = () => {
     label: "Mail",
     icon: (
       <a href="mailto:cesaxcsi@gmail.com">
-        <Mail className="w-5 h-5 text-gray-600 hover:text-blue-500 transition-colors" />
+        <img src="/gmail.png" alt="Mail" className="w-5 h-5 text-gray-600 hover:text-blue-500 transition-colors" />
       </a>
     ),
   },
@@ -129,7 +129,7 @@ const Footer = () => {
     label: "Discord",
     icon: (
       <a href="https://discord.gg/k6QYC64N" target="_blank" rel="noopener noreferrer">
-        <img src="/discord.svg" alt="Discord" className="w-5 h-5 text-gray-600 hover:text-indigo-500 transition-colors" />
+        <img src="/discord-white-icon.svg" alt="Discord" className="w-5 h-5 text-gray-600 hover:text-indigo-500 transition-colors" />
       </a>
     ),
   },
