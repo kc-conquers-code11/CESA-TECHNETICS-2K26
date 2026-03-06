@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Instagram } from 'lucide-react';
+import { Instagram } from 'lucide-react';
 
 // ── FOOTPRINT SVG ─────────────────────────────────────────────────────────────
 const FootprintSVG = ({ mirrored = false, color = '#5c3a10' }: { mirrored?: boolean; color?: string }) => (
@@ -27,7 +27,7 @@ interface Footprint {
   isRight: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const WalkingFootprints = () => {
   const [prints, setPrints] = useState<Footprint[]>([]);
   const counterRef = useRef(0);

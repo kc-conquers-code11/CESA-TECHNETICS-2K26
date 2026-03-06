@@ -142,7 +142,7 @@ const ContactForm = () => {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
   const handleSubmit = () => {
     if (form.name && form.email && form.subject && form.message) {
       const to = 'technetics2k26@gmail.com'; // 👈 replace with your Gmail
