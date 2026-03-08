@@ -122,7 +122,7 @@ const Hero = () => {
             fontFamily: "'BlackChancery', serif",
             fontWeight: 5,
             fontStyle: 'normal',
-            fontSize: '42px',
+            fontSize: 'clamp(24px, 6vw, 42px)',
             lineHeight: '100%',
             letterSpacing: '0%',
             textAlign: 'center',
@@ -147,31 +147,31 @@ const Hero = () => {
           initial={{ scale: 0.9, opacity: 0 }} 
           animate={{ scale: showContent ? 1 : 0.9, opacity: showContent ? 1 : 0 }} 
           transition={{ duration: 0.8, delay: showContent ? 0.6 : 0 }}
-          className="flex items-center gap-3 md:gap-6 mt-8"
+          className="flex items-center justify-center w-full mt-8 md:mt-12"
         >
-          <div className="flex items-center justify-center gap-6 md:gap-10">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 md:gap-10">
             {Object.entries(timeLeft).map(([unit, value], index) => (
               <React.Fragment key={unit}>
 
                 {/* CARD */}
-                <div className="relative w-28 h-28 md:w-36 md:h-36 flex items-center justify-center">
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 flex items-center justify-center">
 
                   {/* GOLD CORNERS */}
-                  <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#d4af37]" />
-                  <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#d4af37]" />
-                  <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#d4af37]" />
-                  <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#d4af37]" />
+                  <span className="absolute top-0 left-0 w-3 sm:w-4 h-3 sm:h-4 border-t-2 border-l-2 border-[#d4af37]" />
+                  <span className="absolute top-0 right-0 w-3 sm:w-4 h-3 sm:h-4 border-t-2 border-r-2 border-[#d4af37]" />
+                  <span className="absolute bottom-0 left-0 w-3 sm:w-4 h-3 sm:h-4 border-b-2 border-l-2 border-[#d4af37]" />
+                  <span className="absolute bottom-0 right-0 w-3 sm:w-4 h-3 sm:h-4 border-b-2 border-r-2 border-[#d4af37]" />
 
                   {/* INNER BOX */}
-                  <div className="w-24 h-24 md:w-32 md:h-32 bg-[#F5E6C8] rounded-sm flex flex-col items-center justify-center text-center border-2 border-[#d4af37] shadow-[0_10px_25px_rgba(0,0,0,0.4)]">
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-[#F5E6C8] rounded-sm flex flex-col items-center justify-center text-center border-2 border-[#d4af37] shadow-[0_10px_25px_rgba(0,0,0,0.4)]">
 
                     {/* NUMBER */}
-                    <span className="tracking-tight leading-none text-4xl md:text-5xl font-bold text-[#2d1f14] drop-shadow-[0_3px_2px_rgba(0,0,0,0.4)]">
+                    <span className="tracking-tight leading-none text-2xl sm:text-4xl md:text-5xl font-bold text-[#2d1f14] drop-shadow-[0_3px_2px_rgba(0,0,0,0.4)]">
                       {String(value).padStart(2, "0")}
                     </span>
 
                     {/* UNIT */}
-                    <span className="leading-none mt-[6px] text-lg md:text-xl text-[#6b4f2a] tracking-wide font-[500px] font-blackchancery" style={{ fontFamily: "'BlackChancery', serif"}}>
+                    <span className="leading-none mt-1 sm:mt-[6px] text-xs sm:text-lg md:text-xl text-[#6b4f2a] tracking-wide font-medium" style={{ fontFamily: "'BlackChancery', serif"}}>
                       {unit.charAt(0).toUpperCase() + unit.slice(1)}
                     </span>
 
@@ -180,7 +180,7 @@ const Hero = () => {
 
                 {/* STAR */}
                 {index < Object.keys(timeLeft).length - 1 && (
-                  <span className="text-[#d4af37] text-4xl md:text-5xl select-none">
+                  <span className="text-[#d4af37] text-2xl sm:text-4xl md:text-5xl select-none hidden sm:block">
                     ✦
                   </span>
                 )}
