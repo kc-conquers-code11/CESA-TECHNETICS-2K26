@@ -23,13 +23,28 @@ body {
 }
 
 @font-face {
-  font-family: "blackchancery";
-  src: url("/fonts/BLKCHCRY.TTF") format("truetype");
+  font-family: 'BlackChancery';
+  src: url('/fonts/BLKCHCRY.woff2') format('woff2'),
+       url('/fonts/BLKCHCRY.woff') format('woff'),
+       url('/fonts/BLKCHCRY.TTF') format('truetype'); /* Fallback */
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-  font-family: "harryP";
-  src: url("/fonts/harryP.ttf") format("truetype");
+  font-family: 'Harry P';
+  src: url('/fonts/HarryP.woff2') format('woff2'),
+       url('/fonts/HarryP.woff') format('woff'),
+       url('/fonts/HarryP.ttf') format('truetype'); /* Fallback */
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-harry: 'Harry P', serif;
+  --font-wizard: 'BlackChancery', serif;
 }
 
 ::selection {

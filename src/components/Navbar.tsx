@@ -5,7 +5,7 @@ import logo from '../assets/technetics-head.svg';
 
 // Import your audio file
 import bgMusic from '../assets/bgscore.ogg'; 
-import { useNavigate } from 'react-router-dom';  
+// import { useNavigate } from 'react-router-dom';  
 
 const navLinks = [
   { label: "About",      href: "#about" },
@@ -19,7 +19,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   
   // Audio States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -175,23 +175,8 @@ const Navbar = () => {
     </AnimatePresence>
   </div>
 <button 
-  onClick={() => navigate('/games')}
-  className="
-    hidden md:block 
-    px-6 py-2 
-    bg-linear-to-b from-[#d4af37] via-[#e9cf80] to-[#b8860b]
-    border-2 border-[#5c4033] 
-    text-[#2a1a0a] 
-    text-[11px] font-serif font-bold tracking-[0.2em] 
-    rounded-sm
-    shadow-[0_4px_0_0_#5c4033]
-    hover:shadow-[0_2px_0_0_#5c4033]
-    hover:translate-y-[2px]
-    hover:brightness-110
-    /* Magical Glow */
-    transition-all duration-300 uppercase
-    cursor-pointer
-  "
+  // onClick={() => navigate('/games')}
+  className="hidden md:block px-5 py-2 border border-gray-500/50 text-gray-500 text-[10px] font-black tracking-widest rounded-lg cursor-not-allowed grayscale opacity-50 transition-all uppercase"
   style={{ fontFamily: "'Spectral', serif" }} // A common HP-style web font
 >
   Portal

@@ -20,8 +20,7 @@ const GamesPage = () => {
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-6xl md:text-7xl text-center mb-16 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]" 
-        style={{ fontFamily: 'harryP, serif' }}
+        className="text-6xl md:text-7xl text-center mb-16 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)] font-harry" 
       >
         The Triwizard Challenges
       </motion.h1>
@@ -36,7 +35,7 @@ const GamesPage = () => {
           >
             <div className="p-6 grow flex flex-col">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-3xl text-[#FFD700]" style={{ fontFamily: 'blackchancery, serif' }}>{event.title}</h2>
+                <h2 className="text-3xl text-[#FFD700] font-wizard">{event.title}</h2>
                 <span className={`text-xs font-bold px-2 py-1 rounded border backdrop-blur-sm ${tagColors[event.tag] || 'text-gray-300 border-gray-500'}`}>
                   {event.tag}
                 </span>
@@ -77,8 +76,7 @@ const GamesPage = () => {
                   whileHover={{ scale: 1.02, boxShadow: "0px 0px 15px rgba(255,215,0,0.6)" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit" 
-                  className="w-full bg-linear-to-r from-[#8a6e2e] to-[#d4af37] text-black font-bold py-3 px-4 rounded hover:from-[#d4af37] hover:to-[#FFD700] transition-colors mt-6 text-2xl tracking-wide shadow-[0_0_10px_rgba(212,175,55,0.4)]"
-                  style={{ fontFamily: 'blackchancery, serif' }}
+                  className="w-full bg-linear-to-r from-[#8a6e2e] to-[#d4af37] text-black font-bold py-3 px-4 rounded hover:from-[#d4af37] hover:to-[#FFD700] transition-colors mt-6 text-2xl tracking-wide shadow-[0_0_10px_rgba(212,175,55,0.4)] font-wizard"
                 >
                   Enter
                 </motion.button>

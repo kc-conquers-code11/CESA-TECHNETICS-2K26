@@ -19,8 +19,7 @@ const WaitingListPage = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.8 }}
-          className="text-6xl md:text-8xl mb-8 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]" 
-          style={{ fontFamily: 'harryP, serif' }}
+          className="text-6xl md:text-8xl mb-8 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)] font-harry" 
         >
           Waiting List
         </motion.h1>
@@ -30,7 +29,6 @@ const WaitingListPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 1 }}
           className="text-xl md:text-2xl text-gray-300 font-sans mb-12 leading-relaxed" 
-          style={{ fontFamily: 'blackchancery, serif' }}
         >
           The Sorting Hat is considering your application. 
           <br/>
@@ -58,8 +56,7 @@ const WaitingListPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.5, duration: 0.5 }}
           onClick={() => navigate('/games')}
-          className="bg-transparent border-2 border-[#d4af37] text-[#d4af37] px-8 py-3 rounded-lg transition-colors font-bold tracking-wider"
-          style={{ fontFamily: 'blackchancery, serif', fontSize: '1.25rem' }}
+          className="bg-transparent border-2 border-[#d4af37] text-[#d4af37] px-8 py-3 rounded-lg transition-colors font-bold tracking-wider font-wizard text-xl"
         >
           Return to Games
         </motion.button>
