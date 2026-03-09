@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout.tsx';
-import GamesPage from './pages/GamesPage.tsx';
-import WaitingListPage from './pages/WaitingListPage.tsx';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import GamesPage from "./pages/GamesPage";
+import WaitingListPage from "./pages/WaitingListPage";
+import DarkMarkBountyPage from "./pages/DarkMarkBountyPage";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
           <Route path="/" element={<MainLayout />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/waiting-list" element={<WaitingListPage />} />
+          <Route path="/dark-mark-bounty" element={<DarkMarkBountyPage />} />
         </Routes>
       </div>
     </Router>

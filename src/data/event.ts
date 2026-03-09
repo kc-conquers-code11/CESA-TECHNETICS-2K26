@@ -1,4 +1,4 @@
-// src/data/events.ts
+// frontend/CESA-TECHNETICS-2K26/src/data/event.ts
 export const eventsList = [
   {
     title: "The Fallen Phoenix",
