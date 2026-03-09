@@ -5,7 +5,7 @@ import logo from '../assets/technetics-head.svg';
 
 // Import your audio file
 import bgMusic from '../assets/bgscore.ogg'; 
-// import { useNavigate } from 'react-router-dom';  
+import { useNavigate } from 'react-router-dom';  
 
 const navLinks = [
   { label: "About",      href: "#about" },
@@ -19,7 +19,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   
   // Audio States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -175,8 +175,8 @@ const Navbar = () => {
     </AnimatePresence>
   </div>
 <button 
-  // onClick={() => navigate('/games')}
-  className="hidden md:block px-5 py-2 border border-gray-500/50 text-gray-500 text-[10px] font-black tracking-widest rounded-lg cursor-not-allowed grayscale opacity-50 transition-all uppercase"
+  onClick={() => navigate('/games')}
+  className="hidden md:block px-5 py-2 border border-[#d4af37]/50 text-[#d4af37] text-[10px] font-black tracking-widest rounded-lg cursor-pointer hover:bg-[#d4af37] hover:text-black transition-all uppercase"
   style={{ fontFamily: "'Spectral', serif" }} // A common HP-style web font
 >
   Portal
