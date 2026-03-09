@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 import logo from '../assets/technetics-head.svg';
+import { useNavigate } from 'react-router-dom';  
 
 // Import your audio file
 import bgMusic from '../assets/bgscore.ogg'; 
@@ -19,7 +20,7 @@ const navLinks = [
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   
   // Audio States
   const [isPlaying, setIsPlaying] = useState(false);
@@ -175,9 +176,9 @@ const Navbar = () => {
     </AnimatePresence>
   </div>
 <button 
-  // onClick={() => navigate('/games')}
-  className="hidden md:block px-5 py-2 border border-gray-500/50 text-gray-500 text-[10px] font-black tracking-widest rounded-lg cursor-not-allowed grayscale opacity-50 transition-all uppercase"
-  style={{ fontFamily: "'Spectral', serif" }} // A common HP-style web font
+  onClick={() => navigate('/login')}
+  className="hidden md:block px-5 py-2 border border-[#d4af37]/70 text-[#d4af37] text-[10px] font-black tracking-widest rounded-lg hover:bg-[#d4af37] hover:text-black transition-all uppercase"
+  style={{ fontFamily: "'Spectral', serif" }}
 >
   Portal
 </button>

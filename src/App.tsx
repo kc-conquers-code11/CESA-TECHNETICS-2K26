@@ -1,7 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout.tsx';
-import GamesPage from './pages/GamesPage.tsx';
-import WaitingListPage from './pages/WaitingListPage.tsx';
+import MainLayout from './layouts/MainLayout';
+import GamesPage from './pages/GamesPage';
+import WaitingArea from './pages/WaitingArea';
+
+// Auth Components
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+
+// Game Flow 
+import { MCQRound } from './components/competition/MCQRound';
+
+// Admin
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   return (
@@ -10,7 +21,28 @@ function App() {
         <Routes>
           <Route path="/" element={<MainLayout />} />
           <Route path="/games" element={<GamesPage />} />
-          <Route path="/waiting-list" element={<WaitingListPage />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Secure Routes */}
+          <Route path="/waiting-area" element={
+            <ProtectedRoute>
+              <WaitingArea />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/mcq" element={
+            <ProtectedRoute>
+              <MCQRound />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin" element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>
