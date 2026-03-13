@@ -14,8 +14,9 @@ import { AnimatedBackground } from './AnimatedBackground';
 import { RulesPage } from './RulesPage';
 import { WaitingArea } from './WaitingArea';
 import { MCQRound } from './MCQRound';
-import { FlowchartRound } from './FlowchartRound';
-import { CodingRound } from './CodingRound';
+import GithubRound from './GithubRound';
+import HackerthonRound from './HackerthonRound';
+import { DarkMarkBounty } from '../darkMarkBounty/DarkMarkBounty';
 import { CompletionPage } from './RoundPlaceholders';
 
 export const CompetitionLayout = () => {
@@ -170,8 +171,9 @@ export const CompetitionLayout = () => {
       case 'waiting_r3': 
         return <WaitingArea />;
       case 'mcq': return <MCQRound />;
-      case 'flowchart': return <FlowchartRound />;
-      case 'coding': return <CodingRound isSidebarExpanded={isSidebarExpanded} />;
+      case 'flowchart': return <GithubRound />;
+      case 'coding': return <HackerthonRound />;
+      case 'darkmark': return <DarkMarkBounty />;
       case 'completed': return <CompletionPage />;
       default: return <RulesPage />;
     }

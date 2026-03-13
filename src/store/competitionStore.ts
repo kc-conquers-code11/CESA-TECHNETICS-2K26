@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export type RoundStatus = 'locked' | 'active' | 'completed';
 //  ADDED: Intermediate waiting rounds (waiting_r2, waiting_r3) to act as barriers
-export type Round = 'rules' | 'waiting' | 'mcq' | 'waiting_r2' | 'flowchart' | 'waiting_r3' | 'coding' | 'completed';
+export type Round = 'rules' | 'waiting' | 'mcq' | 'waiting_r2' | 'flowchart' | 'waiting_r3' | 'coding' | 'completed' | 'darkmark';
 export type CompetitionStatus = 'active' | 'frozen' | 'disqualified';
 
 interface CompetitionState {
@@ -17,6 +17,9 @@ interface CompetitionState {
   tabSwitchCount: number;
   mcqStartTime: number | null;
   flowchartStartTime: number | null;
+  isDarkMark: boolean;
+  teamName: string | null;
+  // phoneNumber: string | null;
 
   // Actions
   initializeUser: (userId: string, email: string) => Promise<void>;
@@ -25,6 +28,7 @@ interface CompetitionState {
   startRound1: () => void;
   startMCQ: () => void;
   startFlowchart: () => void;
+  startDarkMark: () => void;
   completeRound: (round: Round) => Promise<void>;
   logTabSwitch: () => Promise<void>;
   incrementTabSwitch: () => Promise<void>;
@@ -47,12 +51,16 @@ const initialState = {
     waiting_r3: 'locked',
     coding: 'locked',
     completed: 'locked',
+    darkmark: 'locked',
   } as Record<Round, RoundStatus>,
   tabSwitchCount: 0,
   mcqStartTime: null,
   flowchartStartTime: null,
   userId: null,
   email: null,
+  isDarkMark: false,
+  teamName: null,
+  // phoneNumber: null,
 };
 
 // Define the strict linear order of rounds
@@ -87,7 +95,10 @@ export const useCompetitionStore = create<CompetitionState>()(
             competitionStatus: data.status,
             currentRound: currentRoundSlug,
             tabSwitchCount: data.tab_switches || 0,
-            roundStatus: newRoundStatus
+            roundStatus: newRoundStatus,
+            isDarkMark: data.is_dark_mark || false,
+            teamName: data.team_name || null,
+            // phoneNumber: data.phone_number || null,
           });
         } else {
           // Create session if not exists
@@ -122,7 +133,10 @@ export const useCompetitionStore = create<CompetitionState>()(
           competitionStatus: data.status, 
           currentRound: currentRoundSlug, 
           tabSwitchCount: data.tab_switches,
-          roundStatus: newRoundStatus
+          roundStatus: newRoundStatus,
+          isDarkMark: data.is_dark_mark || false,
+          teamName: data.team_name || null,
+          // phoneNumber: data.phone_number || null,
         });
       },
 
@@ -156,6 +170,12 @@ export const useCompetitionStore = create<CompetitionState>()(
 
         set({ currentRound: 'mcq', roundStatus: newRoundStatus });
         get().startMCQ();
+      },
+
+      startDarkMark: () => {
+        const newRoundStatus = { ...get().roundStatus };
+        newRoundStatus.darkmark = 'active';
+        set({ currentRound: 'darkmark', roundStatus: newRoundStatus });
       },
 
       completeRound: async (completedRound) => {

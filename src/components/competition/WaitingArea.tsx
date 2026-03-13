@@ -30,8 +30,19 @@ export const WaitingArea = () => {
 
   // Dynamic Content based on which waiting room we are in
   const getContent = () => {
+    const { isDarkMark } = useCompetitionStore.getState();
+
     switch (currentRound) {
         case 'waiting':
+            if (isDarkMark) {
+                return {
+                    title: "Authorized Access",
+                    icon: <ShieldCheck className="w-12 h-12 text-red-500" />,
+                    bg: "bg-red-500/10",
+                    desc: "Identity verified. You are in the secure queue for the Dark Mark Bounty.",
+                    status: "WAITING FOR EXTRACTION"
+                };
+            }
             return {
                 title: "Rules Accepted",
                 icon: <ShieldCheck className="w-12 h-12 text-green-500" />,

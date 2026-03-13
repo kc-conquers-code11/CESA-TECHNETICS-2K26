@@ -264,7 +264,7 @@ export default function AdminPanel() {
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const [config, setConfig] = useState({ mcq: '15', flowchart: '30', coding: '45' });
+    const [config, setConfig] = useState({ mcq: '15', flowchart: '30', coding: '45', darkmark: '20' });
     
     // Inspection State (For Monitor Tab)
     const [selectedUser, setSelectedUser] = useState<Participant | null>(null);
@@ -298,6 +298,8 @@ export default function AdminPanel() {
     const flowchartCount = participants.filter(p => p.current_round_slug === 'flowchart').length;
     const waitingR3Count = participants.filter(p => p.current_round_slug === 'waiting_r3').length;
     const codingCount = participants.filter(p => p.current_round_slug === 'coding').length;
+    const darkMarkCount = participants.filter(p => p.current_round_slug === 'darkmark').length;
+    const darkMarkWaitingCount = participants.filter(p => p.current_round_slug === 'waiting' && (p as any).is_dark_mark).length;
 
     const fetchData = async () => {
         if (participants.length === 0) setLoading(true);
@@ -324,6 +326,7 @@ export default function AdminPanel() {
                     if (c.key === 'mcq_duration') newConfig.mcq = c.value;
                     if (c.key === 'flowchart_duration') newConfig.flowchart = c.value;
                     if (c.key === 'coding_duration') newConfig.coding = c.value;
+                    if (c.key === 'darkmark_duration') newConfig.darkmark = c.value;
                 });
                 setConfig(newConfig);
             }
@@ -375,7 +378,8 @@ export default function AdminPanel() {
         const updates = [
             { key: 'mcq_duration', value: config.mcq },
             { key: 'flowchart_duration', value: config.flowchart },
-            { key: 'coding_duration', value: config.coding }
+            { key: 'coding_duration', value: config.coding },
+            { key: 'darkmark_duration', value: config.darkmark }
         ];
         const { error } = await supabase.from('game_config').upsert(updates, { onConflict: 'key' });
         setLoading(false);
@@ -481,6 +485,17 @@ export default function AdminPanel() {
         if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Round 3 Started!`, { id: toastId });
     };
 
+    const startDarkMarkRound = async () => {
+        if (!confirm("⚠️ START DARK MARK ROUND?")) return;
+        const toastId = toast.loading("Starting Dark Mark Bounty...");
+        const { error } = await supabase.from('exam_sessions')
+            .update({ current_round_slug: 'darkmark', status: 'active' })
+            .eq('current_round_slug', 'waiting')
+            .eq('is_dark_mark', true)
+            .select();
+        if (error) toast.error("Failed to start", { id: toastId }); else toast.success(`Dark Mark Round Started!`, { id: toastId });
+    };
+
     const resetAllToWaiting = async () => {
         if (!confirm("🛑 RESET ALL?")) return;
         setParticipants(prev => prev.map(p => ({ ...p, current_round_slug: 'waiting' })));
@@ -574,6 +589,7 @@ export default function AdminPanel() {
                             { label: 'Waiting (R1)', count: waitingCount, color: 'text-blue-500' },
                             { label: 'Waiting (R2)', count: waitingR2Count, color: 'text-blue-400' },
                             { label: 'Waiting (R3)', count: waitingR3Count, color: 'text-blue-300' },
+                            { label: 'Wait (DM)', count: darkMarkWaitingCount, color: 'text-red-400' },
                             { label: 'Banned', count: participants.filter(p => p.status === 'disqualified').length, color: 'text-red-600' }
                             ].map((stat, i) => (
                                 <div key={i} className="bg-zinc-900/80 border border-zinc-800 p-4 rounded-xl">
@@ -651,6 +667,7 @@ export default function AdminPanel() {
                                 <div><label className="text-sm font-bold text-zinc-400 mb-1 block">MCQ Duration (Minutes)</label><Input value={config.mcq} onChange={e => setConfig({ ...config, mcq: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
                                 <div><label className="text-sm font-bold text-zinc-400 mb-1 block">Flowchart Duration (Minutes)</label><Input value={config.flowchart} onChange={e => setConfig({ ...config, flowchart: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
                                 <div><label className="text-sm font-bold text-zinc-400 mb-1 block">Coding Duration (Minutes)</label><Input value={config.coding} onChange={e => setConfig({ ...config, coding: e.target.value })} className="bg-black border-zinc-700" type="number" /></div>
+                                <div><label className="text-sm font-bold text-red-900/50 mb-1 block uppercase">Dark Mark Duration (Minutes)</label><Input value={config.darkmark} onChange={e => setConfig({ ...config, darkmark: e.target.value })} className="bg-black border-red-900/30 text-red-500 focus:border-red-500" type="number" /></div>
                             </div>
                             <Button onClick={saveSettings} disabled={loading} className="w-full mt-8 bg-red-600 hover:bg-red-500 text-white font-bold h-12"><Save className="w-4 h-4 mr-2" /> Save Configuration</Button>
                         </div>
@@ -690,6 +707,16 @@ export default function AdminPanel() {
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-purple-500"></div><span className="text-zinc-500">Code:</span><span className="font-bold text-white">{codingCount}</span></div>
                                 </div>
                                 <Button onClick={startRound3} disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START ROUND 3"}</Button>
+                            </div>
+
+                            <div className="bg-zinc-900/80 border border-red-900/50 p-6 rounded-2xl relative overflow-hidden group hover:border-red-600/50 transition-colors">
+                                <h3 className="text-lg font-bold text-red-500 mb-2 flex items-center gap-2"><Shield className="w-5 h-5" /> Start Dark Mark</h3>
+                                <p className="text-zinc-400 mb-2 text-xs">Waiting (DM) → Dark Mark</p>
+                                <div className="flex items-center gap-4 mb-4 text-xs">
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-400"></div><span className="text-zinc-500">Wait DM:</span><span className="font-bold text-white">{darkMarkWaitingCount}</span></div>
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-600"></div><span className="text-zinc-500">Active:</span><span className="font-bold text-white">{darkMarkCount}</span></div>
+                                </div>
+                                <Button onClick={startDarkMarkRound} disabled={loading} className="w-full bg-red-700 hover:bg-red-600 text-white font-bold h-10 text-sm">{loading ? "Processing..." : "START DARK MARK"}</Button>
                             </div>
                         </div>
 

@@ -25,14 +25,14 @@ const steps: TimelineStep[] = [
   },
   {
     id: 'flowchart',
-    title: 'Round 2: Flowchart',
-    description: 'Design flowchart solutions',
+    title: 'Round 2: GitHub Sync',
+    description: 'Clone and fix the cursed repo',
     icon: <GitBranch className="w-4 h-4" />,
   },
   {
     id: 'coding',
-    title: 'Round 3: Coding',
-    description: 'Solve DSA challenges',
+    title: 'Round 3: Quest Selection',
+    description: 'Choose your final hackathon quest',
     icon: <Code className="w-4 h-4" />,
   },
 ];
@@ -49,21 +49,30 @@ const getStatusIcon = (status: RoundStatus) => {
 };
 
 export const CompetitionTimeline = () => {
-  const { roundStatus, currentRound } = useCompetitionStore();
+  const { roundStatus, currentRound, isDarkMark } = useCompetitionStore();
+  let currentSteps = [...steps];
+  if (isDarkMark) {
+    currentSteps = [{
+      id: 'darkmark',
+      title: 'Bonus: Dark Mark Bounty',
+      description: 'The ultimate extraction challenge',
+      icon: <Check className="w-4 h-4 text-red-500" />,
+    }];
+  }
 
   return (
     <div className="glass-strong rounded-xl p-5 h-fit w-full">
       <h2 className="font-display text-base font-bold gradient-text mb-4">
-        Competition Progress
+        {isDarkMark ? "Extraction Progress" : "Competition Progress"}
       </h2>
       
       <div className="flex flex-col">
-        {steps.map((step, index) => {
+        {currentSteps.map((step, index) => {
           const status = roundStatus[step.id];
           const isActive = currentRound === step.id;
           const isCompleted = status === 'completed';
           const isLocked = status === 'locked';
-          const isLast = index === steps.length - 1;
+          const isLast = index === currentSteps.length - 1;
           
           return (
             // Flex row ensures Icon and Content stay aligned side-by-side

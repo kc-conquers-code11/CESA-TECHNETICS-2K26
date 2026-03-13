@@ -14,6 +14,9 @@ export default function Signup() {
     class: "FE",
     division: "A",
     branch: "COMPS",
+    isDarkMark: false,
+    teamName: "",
+    // phoneNumber: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -48,6 +51,15 @@ export default function Signup() {
           CREATE ACCOUNT
         </h2>
 
+        <div className="space-y-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <input 
+                name="teamName" 
+                placeholder="Team Name" 
+                className="w-full p-3 bg-zinc-900 border border-zinc-700 rounded focus:border-red-500 outline-none placeholder:text-white/60" 
+                onChange={handleChange} 
+            />
+          </div>
+
         {/* First + Last name */}
         <div className="flex gap-3 mb-3">
           <input
@@ -75,10 +87,9 @@ export default function Signup() {
             name="password" 
             type="password" 
             placeholder="Password (Min 6 chars)" 
-            className="w-full p-3 mb-4 bg-zinc-900 border border-zinc-700 rounded focus:border-red-500 outline-none" 
+            className="w-full p-3 mb-3 bg-zinc-900 border border-zinc-700 rounded focus:border-red-500 outline-none" 
             onChange={handleChange} 
         />
-
         {/* Dropdowns */}
         <label className="text-xs text-zinc-500 mb-1 block">Class Details</label>
         <div className="grid grid-cols-3 gap-3 mb-6">
@@ -97,6 +108,20 @@ export default function Signup() {
             <option>ECS</option>
             <option>MECH</option>
           </select>
+        </div>
+
+        {/* DARK MARK CHECKBOX */}
+        <div className="flex items-center gap-3 mb-6 p-3 bg-red-950/20 border border-red-900/30 rounded-lg group hover:border-red-500/50 transition-colors">
+          <input
+            id="isDarkMark"
+            name="isDarkMark"
+            type="checkbox"
+            className="w-5 h-5 accent-red-600 rounded bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer"
+            onChange={(e) => setForm({ ...form, isDarkMark: e.target.checked })}
+          />
+          <label htmlFor="isDarkMark" className="text-sm font-semibold text-red-200 cursor-pointer select-none">
+            Register for Dark Mark Bounty Round
+          </label>
         </div>
 
         <button

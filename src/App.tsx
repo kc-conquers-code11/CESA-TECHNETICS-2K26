@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import StrangerHero from "./components/StrangerHero";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import DarkMarkLogin from "./pages/DarkMarkLogin";
 
 //  Import ProtectedRoute
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -26,6 +27,7 @@ const App = () => (
           
           {/*  PUBLIC ROUTES */}
           <Route path="/login" element={<Login />} />
+          <Route path="/dark-mark-login" element={<DarkMarkLogin />} />
           <Route path="/signup" element={<Signup />} />
           
           {/*  HOME PAGE IS NOW PUBLIC (Animation sabko dikhegi) */}
