@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { loginApi } from '../lib/auth';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { toast } from 'sonner';
@@ -17,7 +17,20 @@ const STARS = Array.from({ length: 40 }, (_, i) => ({
 
 const GamesPage = () => {
   const navigate = useNavigate();
+
+  // Determine initial page based on date
+  // March 16 (or before) = 0, March 17 = 1
+  const getInitialPage = () => {
+    const today = new Date();
+    // In JS months are 0-indexed. March is index 2.
+    if (today.getMonth() === 2 && today.getDate() >= 17) return 1;
+    return 0;
+  };
+
+  const [currentPage, setCurrentPage] = React.useState(getInitialPage());
+  const [direction, setDirection] = React.useState(0);
   const [loadingIdx, setLoadingIdx] = React.useState<number | null>(null);
+
   const [formData, setFormData] = React.useState([
     { email: "", pass: "" },
     { email: "", pass: "" }
@@ -79,10 +92,10 @@ const GamesPage = () => {
     {
       date: "March 16",
       title: "The Order of the Obscure Code",
-      description: "A multi-round technical showdown culminating in a 15-hour online hackathon.",
+      description: "A multi-round technical showdown culminating in a 15-hour online hackathon-style finale.",
       teamSize: "2-4 Members",
       prizePool: "₹12,000",
-      isLeft: true
+      id: 0
     },
     {
       date: "March 17",
@@ -90,9 +103,36 @@ const GamesPage = () => {
       description: "The ultimate hybrid Tech & Cybersecurity challenge where physical speed meets digital intellect.",
       teamSize: "2-3 Members",
       prizePool: "₹8,000",
-      isLeft: false
+      id: 1
     }
   ];
+
+  const paginate = (newDirection: number) => {
+    const nextPage = currentPage + newDirection;
+    if (nextPage >= 0 && nextPage < bookEvents.length) {
+      setDirection(newDirection);
+      setCurrentPage(nextPage);
+    }
+  };
+
+  const variants = {
+    enter: (direction: number) => ({
+      rotateY: direction > 0 ? 90 : -90,
+      opacity: 0,
+    }),
+    center: {
+      rotateY: 0,
+      opacity: 1,
+      zIndex: 1,
+    },
+    exit: (direction: number) => ({
+      rotateY: direction < 0 ? 90 : -90,
+      opacity: 0,
+      zIndex: 0,
+    }),
+  };
+
+  const event = bookEvents[currentPage];
 
   return (
     <div className="min-h-screen relative bg-[#021516] flex items-center justify-center p-4 md:p-12 py-24 overflow-x-hidden overflow-y-auto">
@@ -116,7 +156,6 @@ const GamesPage = () => {
         ))}
       </div>
 
-      {/* SVG filter for rough deckled edges */}
       <svg className="absolute w-0 h-0" xmlns="http://www.w3.org/2000/svg">
         <filter id="deckle-edges">
           <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
@@ -124,7 +163,6 @@ const GamesPage = () => {
         </filter>
       </svg>
 
-      {/* Ambient particles background (Teal theme to match landing page) */}
       <div className="fixed inset-0 pointer-events-none opacity-40">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#B5FFF0]/10 blur-[150px] rounded-full animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#B5FFF0]/5 blur-[150px] rounded-full animate-pulse delay-1000" />
@@ -134,161 +172,148 @@ const GamesPage = () => {
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 1.5, ease: "easeOut" }}
-        className="relative w-full max-w-7xl min-h-[85vh] flex flex-col md:flex-row group"
+        className="relative w-full max-w-2xl min-h-[85vh] flex group"
+        style={{ perspective: "1500px" }}
       >
         {/* ── THE LEATHER BOOK COVER ── */}
         <div className="absolute inset-x-0 -inset-y-6 bg-[#1a0f08] rounded-[6px] shadow-[0_60px_100px_-20px_rgba(0,0,0,0.95)] border-r-8 border-b-8 border-black/50 transform scale-[1.01] -z-10" />
 
-        {/* ── SUBTLE CENTER FOLD (Ribbon Marker) ── */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[2px] -translate-x-1/2 z-40 bg-black/40 shadow-[0_0_12px_rgba(0,0,0,0.3)]" />
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={currentPage}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              rotateY: { type: "spring", stiffness: 100, damping: 20 },
+              opacity: { duration: 0.3 }
+            }}
+            className="flex-1 min-h-full relative overflow-hidden flex flex-col p-8 md:p-12 md:pb-14"
+            style={{ transformOrigin: direction >= 0 ? "left center" : "right center" }}
+          >
+            {/* ── PARCHMENT BACKGROUND LAYER (Isolated Filter) ── */}
+            <div
+              className="absolute inset-0 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10"
+              style={{
+                background: `linear-gradient(${currentPage === 0 ? 'to right' : 'to left'}, #f2e0b5, #e8d19e)`
+              }}
+            />
 
-        {/* Central Gutter Overlay (Organic Shadow for the fold) */}
-        <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-48 -translate-x-1/2 z-30 pointer-events-none bg-linear-to-r from-transparent via-black/15 to-transparent blur-2xl opacity-80" />
+            {/* Complex Parchment Layering */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')]" />
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stained-paper.png')]" />
 
-        <div className="flex-1 flex flex-col md:flex-row w-full h-full relative z-10">
-          {bookEvents.map((event, idx) => (
-            <motion.div
-              key={idx}
-              className={`flex-1 min-h-full relative overflow-hidden flex flex-col p-8 md:p-12 md:pb-14 ${event.isLeft ? 'md:pr-14' : 'md:pl-14'}`}
-            >
-              {/* ── PARCHMENT BACKGROUND LAYER (Isolated Filter) ── */}
-              <div
-                className="absolute inset-0 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10"
-                style={{
-                  background: `linear-gradient(${event.isLeft ? 'to right' : 'to left'}, #f2e0b5, #e8d19e)`
-                }}
-              />
-              {/* Complex Parchment Layering */}
-              <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')]" />
-              <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stained-paper.png')]" />
+            <div className="absolute inset-6 border border-[#3d2618]/10 pointer-events-none rounded-sm" />
 
-              {/* Subtle Page Fold Shadow (Non-linear transition) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  width: '8rem',
-                  zIndex: 20,
-                  pointerEvents: 'none',
-                  filter: 'blur(4px)',
-                  ...(event.isLeft ? {
-                    right: 0,
-                    background: 'linear-gradient(to left, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05), transparent)'
-                  } : {
-                    left: 0,
-                    background: 'linear-gradient(to right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05), transparent)'
-                  })
-                }}
-              />
+            {/* Date (Script - Top Right) */}
+            <div className="text-right z-10 mb-4 md:mb-6">
+              <span className="font-script text-2xl md:text-3xl text-[#3d2618]/70 block transform -rotate-2">
+                {event.date}
+              </span>
+            </div>
 
-              {/* Inked Borders */}
-              <div className="absolute inset-6 border border-[#3d2618]/10 pointer-events-none rounded-sm" />
+            <div className="flex-1 flex flex-col items-center justify-start text-center z-10">
+              <h2 className="font-wizard text-3xl md:text-4xl lg:text-5xl ink-text mb-4 lg:mb-5 tracking-tight leading-[1.1]">
+                {event.title}
+              </h2>
 
-              {/* Date (Script - Top Right) */}
-              <div className="text-right z-10 mb-4 md:mb-6">
-                <span className="font-script text-2xl md:text-3xl text-[#3d2618]/70 block transform -rotate-2">
-                  {event.date}
-                </span>
-              </div>
+              <p className="font-crimson italic text-base md:text-lg text-[#3d2618] mb-6 md:mb-8 max-w-[90%] opacity-90 leading-relaxed px-4">
+                "{event.description}"
+              </p>
 
-              {/* Content Center (Main Focus Area) */}
-              <div className="flex-1 flex flex-col items-center justify-start text-center z-10">
-                <h2 className="font-wizard text-3xl md:text-4xl lg:text-5xl ink-text mb-4 lg:mb-5 tracking-tight leading-[1.1]">
-                  {event.title}
-                </h2>
-
-                <p className="font-crimson italic text-base md:text-lg text-[#3d2618] mb-6 md:mb-8 max-w-[90%] opacity-90 leading-relaxed px-4">
-                  "{event.description}"
-                </p>
-
-                {/* Stats Grid - Centered & Premium Selection */}
-                <div className="grid grid-cols-1 gap-4 md:gap-6 mb-8 w-full max-w-[280px]">
-                  <div className="flex flex-col items-center group/stat">
-                    <span className="text-[9px] uppercase tracking-[0.4em] text-[#3d2618]/40 font-bold mb-1">Team Size</span>
-                    <span className="font-crimson text-xl text-[#1a0f08] font-bold border-b border-[#3d2618]/20 pb-0.5 w-full">{event.teamSize}</span>
-                  </div>
-                  <div className="flex flex-col items-center group/stat">
-                    <span className="text-[9px] uppercase tracking-[0.4em] text-[#3d2618]/40 font-bold mb-1">Prize Pool</span>
-                    <span className="font-wizard text-2xl text-[#8b6e2e]">{event.prizePool}</span>
-                  </div>
+              <div className="grid grid-cols-1 gap-4 md:gap-6 mb-8 w-full max-w-[280px]">
+                <div className="flex flex-col items-center group/stat">
+                  <span className="text-[9px] uppercase tracking-[0.4em] text-[#3d2618]/40 font-bold mb-1">Team Size</span>
+                  <span className="font-crimson text-xl text-[#1a0f08] font-bold border-b border-[#3d2618]/20 pb-0.5 w-full">{event.teamSize}</span>
                 </div>
-
-                {/* Login Interaction */}
-                <div className="w-full max-w-[300px] mt-auto">
-                  <form onSubmit={(e) => handleLogin(e, idx, event.title)} className="space-y-4 md:space-y-5">
-                    <div className="relative">
-                      <input
-                        id={`email-${idx}`}
-                        name={`email-${idx}`}
-                        type="email"
-                        placeholder="Leader email"
-                        required
-                        value={formData[idx].email}
-                        onChange={(e) => setFormData(prev => {
-                          const newForm = [...prev];
-                          newForm[idx] = { ...newForm[idx], email: e.target.value };
-                          return newForm;
-                        })}
-                        className="w-full bg-[#1a0f08]/5 border-b-2 border-[#1a0f08]/30 focus:border-[#8b6e2e] py-2 px-2 text-[#1a0f08] placeholder:text-[#1a0f08]/30 outline-none transition-all font-crimson text-base md:text-lg"
-                      />
-                    </div>
-                    <div className="relative">
-                      <input
-                        id={`pass-${idx}`}
-                        name={`pass-${idx}`}
-                        type="password"
-                        placeholder="Password"
-                        required
-                        value={formData[idx].pass}
-                        onChange={(e) => setFormData(prev => {
-                          const newForm = [...prev];
-                          newForm[idx] = { ...newForm[idx], pass: e.target.value };
-                          return newForm;
-                        })}
-                        className="w-full bg-[#1a0f08]/5 border-b-2 border-[#1a0f08]/30 focus:border-[#8b6e2e] py-2 px-2 text-[#1a0f08] placeholder:text-[#1a0f08]/30 outline-none transition-all font-crimson text-base md:text-lg"
-                      />
-                    </div>
-
-                    <div className="pt-2 flex flex-col gap-3">
-                      <motion.button
-                        whileHover={{
-                          scale: 1.02,
-                          backgroundColor: "#c4a04d",
-                          boxShadow: "0 10px 20px -10px rgba(0,0,0,0.3)"
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        type="submit"
-                        disabled={loadingIdx !== null}
-                        className="w-full py-3 md:py-4 bg-[#d4af37] text-[#1a0f08] font-wizard text-2xl md:text-3xl rounded shadow-lg transition-all border border-[#1a0f08]/15 tracking-wide flex items-center justify-center relative group/btn disabled:opacity-50"
-                      >
-                        <span>{loadingIdx === idx ? "Verifying..." : "Enter"}</span>
-                        <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-10 transition-opacity bg-white/20 blur-md rounded" />
-                      </motion.button>
-                      <div className="text-center">
-                        <Link
-                          to="/signup"
-                          className="font-crimson italic text-[#3d2618]/60 hover:text-[#8b6e2e] transition-colors text-sm md:text-base border-b border-[#3d2618]/10 hover:border-[#8b6e2e]"
-                        >
-                          New to the Realm? Register Your Intent
-                        </Link>
-                      </div>
-                    </div>
-                  </form>
+                <div className="flex flex-col items-center group/stat">
+                  <span className="text-[9px] uppercase tracking-[0.4em] text-[#3d2618]/40 font-bold mb-1">Prize Pool</span>
+                  <span className="font-wizard text-2xl text-[#8b6e2e]">{event.prizePool}</span>
                 </div>
               </div>
 
-              {/* Rusty/Torn Edge Visuals */}
-              {event.isLeft ? (
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-r from-transparent to-black/10 z-10" />
-              ) : (
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-linear-to-l from-transparent to-black/10 z-10" />
-              )}
-            </motion.div>
-          ))}
-        </div>
+              <div className="w-full max-w-[300px] mt-auto">
+                <form onSubmit={(e) => handleLogin(e, currentPage, event.title)} className="space-y-4 md:space-y-5">
+                  <div className="relative">
+                    <input
+                      id={`email-${currentPage}`}
+                      name={`email-${currentPage}`}
+                      type="email"
+                      placeholder="Leader email"
+                      required
+                      value={formData[currentPage].email}
+                      onChange={(e) => setFormData(prev => {
+                        const newForm = [...prev];
+                        newForm[currentPage] = { ...newForm[currentPage], email: e.target.value };
+                        return newForm;
+                      })}
+                      className="w-full bg-[#1a0f08]/5 border-b-2 border-[#1a0f08]/30 focus:border-[#8b6e2e] py-2 px-2 text-[#1a0f08] placeholder:text-[#1a0f08]/30 outline-none transition-all font-crimson text-base md:text-lg"
+                    />
+                  </div>
+                  <div className="relative">
+                    <input
+                      id={`pass-${currentPage}`}
+                      name={`pass-${currentPage}`}
+                      type="password"
+                      placeholder="Password"
+                      required
+                      value={formData[currentPage].pass}
+                      onChange={(e) => setFormData(prev => {
+                        const newForm = [...prev];
+                        newForm[currentPage] = { ...newForm[currentPage], pass: e.target.value };
+                        return newForm;
+                      })}
+                      className="w-full bg-[#1a0f08]/5 border-b-2 border-[#1a0f08]/30 focus:border-[#8b6e2e] py-2 px-2 text-[#1a0f08] placeholder:text-[#1a0f08]/30 outline-none transition-all font-crimson text-base md:text-lg"
+                    />
+                  </div>
 
-        {/* Decorative elements - floating like real notes */}
+                  <div className="pt-2 flex flex-col gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.02, backgroundColor: "#c4a04d" }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={loadingIdx !== null}
+                      className="w-full py-3 md:py-4 bg-[#d4af37] text-[#1a0f08] font-wizard text-2xl md:text-3xl rounded shadow-lg transition-all border border-[#1a0f08]/15 tracking-wide flex items-center justify-center relative group/btn disabled:opacity-50"
+                    >
+                      <span>{loadingIdx === currentPage ? "Verifying..." : "Enter"}</span>
+                    </motion.button>
+                    <div className="text-center">
+                      <Link to="/signup" className="font-crimson italic text-[#3d2618]/60 hover:text-[#8b6e2e] transition-colors text-sm md:text-base border-b border-[#3d2618]/10 hover:border-[#8b6e2e]">
+                        New to the Realm? Register Your Intent
+                      </Link>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* ── BOOK NAVIGATION ARROWS ── */}
+        <button
+          onClick={() => paginate(-1)}
+          disabled={currentPage === 0}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-4 z-50 text-[#d4af37] hover:scale-110 transition-all disabled:opacity-0 p-4"
+          aria-label="Previous Page"
+        >
+          <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+
+        <button
+          onClick={() => paginate(1)}
+          disabled={currentPage === bookEvents.length - 1}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full pl-4 z-50 text-[#d4af37] hover:scale-110 transition-all disabled:opacity-0 p-4"
+          aria-label="Next Page"
+        >
+          <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+
         <motion.div
           initial={{ rotate: 15, x: 200, opacity: 0 }}
           animate={{ rotate: 3, x: 0, opacity: 1 }}
@@ -297,7 +322,7 @@ const GamesPage = () => {
           style={{ clipPath: "polygon(0% 0%, 100% 0%, 95% 95%, 0% 100%)" }}
         >
           <div className="w-4 h-4 rounded-full bg-red-800 mx-auto mb-3 shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-          <p className="font-crimson text-sm text-[#3d2618] text-center leading-tight selection:bg-red-200">
+          <p className="font-crimson text-sm text-[#3d2618] text-center leading-tight">
             <span className="font-bold text-red-900">MANDATORY:</span><br /> Complete each seal carefully. The Registry is absolute.
           </p>
           <div className="absolute bottom-1 right-1 font-script text-[8px] text-[#3d2618]/30 uppercase">Ministry of Code</div>
