@@ -65,7 +65,7 @@ export const CompetitionHeader = () => {
   // 3. LOGOUT HANDLER
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/login');
+    navigate('/games');
   };
 
   return (

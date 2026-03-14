@@ -17,7 +17,7 @@ const STARS = Array.from({ length: 40 }, (_, i) => ({
 
 const GamesPage = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = React.useState(false);
+  const [loadingIdx, setLoadingIdx] = React.useState<number | null>(null);
   const [formData, setFormData] = React.useState([
     { email: "", pass: "" },
     { email: "", pass: "" }
@@ -27,7 +27,7 @@ const GamesPage = () => {
 
   const handleLogin = async (e: React.FormEvent, idx: number, title: string) => {
     e.preventDefault();
-    setLoading(true);
+    setLoadingIdx(idx);
     const { email, pass } = formData[idx];
 
     try {
@@ -45,14 +45,14 @@ const GamesPage = () => {
         if (res.isAdmin) {
           navigate("/admin");
         } else {
-          navigate('/rules-technetics');
+          navigate('/rules');
         }
       } else {
         // Dark Mark Bounty Logic
         const state = useCompetitionStore.getState();
         if (!state.isDarkMark && !res.isAdmin) {
           toast.error("Access Denied: You are not registered for the Dark Mark Bounty.");
-          setLoading(false);
+          setLoadingIdx(null);
           return;
         }
 
@@ -65,7 +65,7 @@ const GamesPage = () => {
     } catch (err: any) {
       toast.error(err.message || "Login failed");
     } finally {
-      setLoading(false);
+      setLoadingIdx(null);
     }
   };
 
@@ -246,14 +246,6 @@ const GamesPage = () => {
                     </div>
 
                     <div className="pt-2 flex flex-col gap-3">
-                      <button
-                        type="button"
-                        onClick={() => navigate('/rules')}
-                        className="text-[#3d2618]/50 hover:text-[#3d2618]/80 font-wizard text-sm tracking-widest transition-colors uppercase border-b border-transparent hover:border-[#3d2618]/20"
-                      >
-                        View Sacred Rules
-                      </button>
-
                       <motion.button
                         whileHover={{
                           scale: 1.02,
@@ -262,10 +254,10 @@ const GamesPage = () => {
                         }}
                         whileTap={{ scale: 0.98 }}
                         type="submit"
-                        disabled={loading}
+                        disabled={loadingIdx !== null}
                         className="w-full py-3 md:py-4 bg-[#d4af37] text-[#1a0f08] font-wizard text-2xl md:text-3xl rounded shadow-lg transition-all border border-[#1a0f08]/15 tracking-wide flex items-center justify-center relative group/btn disabled:opacity-50"
                       >
-                        <span>{loading ? "Verifying..." : "Enter"}</span>
+                        <span>{loadingIdx === idx ? "Verifying..." : "Enter"}</span>
                         <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-10 transition-opacity bg-white/20 blur-md rounded" />
                       </motion.button>
                     </div>

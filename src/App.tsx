@@ -53,7 +53,8 @@ const App = () => (
             path="/rules" 
             element={
               <ProtectedRoute>
-                <Rules />
+                {/* <Rules /> */}
+                <Index />
               </ProtectedRoute>
             } 
           />
