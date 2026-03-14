@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 
 const GithubRound = () => {
     // useAntiCheat(); // Anti-cheat disabled for this round
-    const { completeRound, email, userId } = useCompetitionStore();
+    const { completeRound, email, userId, teamName } = useCompetitionStore();
       const buttonStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -82,7 +82,7 @@ const GithubRound = () => {
             const { error: dbError } = await supabase
                 .from('github_submissions')
                 .insert([{
-                    team_name: email, 
+                    team_name: teamName, 
                     deploy_link: submissionLink.trim(),
                     github_end_time: new Date().toISOString(),
                     user_id: sessionId // Assuming userId is available from useCompetitionStore
@@ -109,7 +109,7 @@ const GithubRound = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [isSubmitting, submissionLink, completeRound, email, userId]); // Added email and userId to dependencies
+    }, [isSubmitting, submissionLink, completeRound, teamName, email, userId]); // Added teamName, email and userId to dependencies
 
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden">

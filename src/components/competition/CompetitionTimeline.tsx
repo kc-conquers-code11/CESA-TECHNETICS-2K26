@@ -71,9 +71,12 @@ export const CompetitionTimeline = () => {
   }
 
   return (
-    <div className="glass-strong rounded-xl p-5 h-fit w-full">
-      <h2 className="font-display text-base font-bold gradient-text mb-4">
-        {isDarkMark ? "Extraction Progress" : "Competition Progress"}
+    <div className="bg-[#1a0f08]/95 backdrop-blur-md border border-[#8b6e2e]/30 rounded-xl p-5 h-fit w-full shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative overflow-hidden">
+      {/* Decorative background element */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8b6e2e]/40 to-transparent" />
+      
+      <h2 className="font-wizard text-lg font-bold text-[#d4af37] tracking-[0.2em] mb-6 uppercase border-b border-[#8b6e2e]/20 pb-2">
+        {isDarkMark ? "Extraction Progress" : "Magical Progress"}
       </h2>
       
       <div className="flex flex-col">
@@ -86,28 +89,30 @@ export const CompetitionTimeline = () => {
           
           return (
             // Flex row ensures Icon and Content stay aligned side-by-side
-            <div key={step.id} className="flex gap-3">
+            <div key={step.id} className="flex gap-4">
               
               {/* LEFT COLUMN: Icon + Line (Fixed Alignment) */}
               <div className="flex flex-col items-center">
                 {/* Icon Bubble */}
                 <div
                   className={cn(
-                    "relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 shrink-0",
-                    isActive && "border-primary bg-primary/20 text-primary animate-pulse-glow",
-                    isCompleted && "border-success bg-success/20 text-success",
-                    isLocked && "border-border bg-muted text-muted-foreground"
+                    "relative z-10 flex items-center justify-center w-9 h-9 rounded-full border-2 transition-all duration-300 shrink-0",
+                    isActive && "border-[#d4af37] bg-[#3d2618] text-[#f2e0b5] shadow-[0_0_15px_rgba(212,175,55,0.4)] animate-pulse",
+                    isCompleted && "border-[#8b6e2e] bg-[#1a0f08] text-[#d4af37]",
+                    isLocked && "border-[#3d2618] bg-[#0d0805] text-[#3d2618]"
                   )}
                 >
-                  {isCompleted ? getStatusIcon('completed') : step.icon}
+                  {isCompleted ? <Check className="w-4 h-4" /> : 
+                   isLocked ? <Lock className="w-4 h-4" /> : 
+                   step.icon}
                 </div>
 
                 {/* Connector Line (Auto-expands to connect next step) */}
                 {!isLast && (
                   <div 
                     className={cn(
-                      "w-0.5 flex-1 my-0.5 transition-colors duration-500 min-h-[1.5rem]",
-                      isCompleted ? "bg-primary" : "bg-border"
+                      "w-0.5 flex-1 my-1 transition-colors duration-500 min-h-[2rem]",
+                      isCompleted ? "bg-[#8b6e2e]" : "bg-[#3d2618]"
                     )} 
                   />
                 )}
@@ -119,24 +124,24 @@ export const CompetitionTimeline = () => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={cn("flex-1 pb-6 pt-0.5", isLast && "pb-0")} 
+                className={cn("flex-1 pb-8 pt-0.5", isLast && "pb-0")} 
               >
                 <div 
                   className={cn(
-                    "p-2.5 rounded-lg transition-all duration-300 border border-transparent",
+                    "p-3 rounded-lg transition-all duration-300 border",
                     // Active Highlights
-                    isActive && "bg-primary/10 glow-primary border-primary/20",
-                    isCompleted && "bg-success/5 border-success/10",
-                    isLocked && "opacity-60"
+                    isActive && "bg-[#3d2618]/40 border-[#d4af37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)]",
+                    isCompleted && "bg-[#1a0f08]/50 border-[#8b6e2e]/10",
+                    isLocked && "opacity-40 border-transparent"
                   )}
                 >
-                  <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center justify-between mb-1">
                     <h3
                       className={cn(
-                        "font-semibold text-xs transition-colors",
-                        isActive && "text-primary text-glow-primary",
-                        isCompleted && "text-success",
-                        isLocked && "text-muted-foreground"
+                        "font-harry text-sm tracking-widest transition-colors pt-0.5",
+                        isActive && "text-[#f2e0b5]",
+                        isCompleted && "text-[#d4af37]",
+                        isLocked && "text-[#3d2618]"
                       )}
                     >
                       {step.title}
@@ -145,17 +150,20 @@ export const CompetitionTimeline = () => {
                     {/* Compact Status Badge */}
                     <span
                       className={cn(
-                        "text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold",
-                        isActive && "bg-primary/20 text-primary border border-primary/20",
-                        isCompleted && "bg-success/20 text-success border border-success/20",
-                        isLocked && "bg-muted text-muted-foreground border border-border"
+                        "text-[8px] px-2 py-0.5 rounded-full uppercase tracking-[0.2em] font-sans font-bold border",
+                        isActive && "bg-[#d4af37]/20 text-[#f2e0b5] border-[#d4af37]/30",
+                        isCompleted && "bg-[#8b6e2e]/20 text-[#d4af37] border-[#8b6e2e]/30",
+                        isLocked && "bg-transparent text-[#3d2618] border-[#3d2618]/30"
                       )}
                     >
-                      {isActive ? 'Active' : isCompleted ? 'Done' : 'Locked'}
+                      {isActive ? 'Active' : isCompleted ? 'Accepted' : 'Sealed'}
                     </span>
                   </div>
                   
-                  <p className="text-[10px] text-muted-foreground leading-tight">
+                  <p className={cn(
+                    "text-[10px] leading-tight font-crimson italic tracking-wide",
+                    isActive ? "text-[#f2e0b5]/70" : "text-[#f2e0b5]/40"
+                  )}>
                     {step.description}
                   </p>
                 </div>
