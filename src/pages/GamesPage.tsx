@@ -31,6 +31,24 @@ const GamesPage = () => {
   const [direction, setDirection] = React.useState(0);
   const [loadingIdx, setLoadingIdx] = React.useState<number | null>(null);
 
+  const DARK_MARK_START_TIME = new Date("2026-03-17T06:00:00+05:30").getTime();
+  const [currentTime, setCurrentTime] = React.useState(Date.now());
+  const isDarkMarkLocked = React.useMemo(() => {
+    return currentTime < DARK_MARK_START_TIME;
+  }, [currentTime, DARK_MARK_START_TIME]);
+
+  React.useEffect(() => {
+    if (!isDarkMarkLocked) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setCurrentTime(now);
+      if (now >= DARK_MARK_START_TIME) {
+        clearInterval(interval);
+      }
+    }, 1000 * 60);
+    return () => clearInterval(interval);
+  }, [isDarkMarkLocked, DARK_MARK_START_TIME]);
+
   const [formData, setFormData] = React.useState([
     { email: "", pass: "" },
     { email: "", pass: "" }
@@ -40,6 +58,10 @@ const GamesPage = () => {
 
   const handleLogin = async (e: React.FormEvent, idx: number, title: string) => {
     e.preventDefault();
+    if (idx === 1 && isDarkMarkLocked) {
+      toast.error("The Dark Mark is currently sealed until March 17th, 6 AM.");
+      return;
+    }
     setLoadingIdx(idx);
     const { email, pass } = formData[idx];
 
@@ -195,7 +217,7 @@ const GamesPage = () => {
           >
             {/* ── PARCHMENT BACKGROUND LAYER (Isolated Filter) ── */}
             <div
-              className="absolute inset-0 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10"
+              className={`absolute inset-0 shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10 transition-all duration-1000 ${currentPage === 1 && isDarkMarkLocked ? "grayscale opacity-80" : ""}`}
               style={{
                 background: `linear-gradient(${currentPage === 0 ? 'to right' : 'to left'}, #f2e0b5, #e8d19e)`
               }}
@@ -271,13 +293,22 @@ const GamesPage = () => {
 
                   <div className="pt-2 flex flex-col gap-3">
                     <motion.button
-                      whileHover={{ scale: 1.02, backgroundColor: "#c4a04d" }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={!(currentPage === 1 && isDarkMarkLocked) ? { scale: 1.02, backgroundColor: "#c4a04d" } : {}}
+                      whileTap={!(currentPage === 1 && isDarkMarkLocked) ? { scale: 0.98 } : {}}
                       type="submit"
-                      disabled={loadingIdx !== null}
-                      className="w-full py-3 md:py-4 bg-[#d4af37] text-[#1a0f08] font-wizard text-2xl md:text-3xl rounded shadow-lg transition-all border border-[#1a0f08]/15 tracking-wide flex items-center justify-center relative group/btn disabled:opacity-50"
+                      disabled={loadingIdx !== null || (currentPage === 1 && isDarkMarkLocked)}
+                      className={`w-full py-3 md:py-4 transition-all rounded shadow-lg border border-[#1a0f08]/15 tracking-wide flex items-center justify-center relative group/btn ${currentPage === 1 && isDarkMarkLocked
+                        ? "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50 grayscale"
+                        : "bg-[#d4af37] text-[#1a0f08] font-wizard text-2xl md:text-3xl"
+                        }`}
                     >
-                      <span>{loadingIdx === currentPage ? "Verifying..." : "Enter"}</span>
+                      <span>
+                        {currentPage === 1 && isDarkMarkLocked
+                          ? "SEALED"
+                          : loadingIdx === currentPage
+                            ? "Verifying..."
+                            : "Enter"}
+                      </span>
                     </motion.button>
                     <div className="text-center">
                       <Link to="/signup" className="font-crimson italic text-[#3d2618]/60 hover:text-[#8b6e2e] transition-colors text-sm md:text-base border-b border-[#3d2618]/10 hover:border-[#8b6e2e]">
