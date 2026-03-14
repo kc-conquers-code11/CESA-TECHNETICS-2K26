@@ -15,6 +15,7 @@ export default function Signup() {
     division: "A",
     branch: "COMPS",
     isDarkMark: false,
+    isObscure: false,
     teamName: "",
     // phoneNumber: "",
   });
@@ -110,18 +111,33 @@ export default function Signup() {
           </select>
         </div>
 
-        {/* DARK MARK CHECKBOX */}
-        <div className="flex items-center gap-3 mb-6 p-3 bg-red-950/20 border border-red-900/30 rounded-lg group hover:border-red-500/50 transition-colors">
-          <input
-            id="isDarkMark"
-            name="isDarkMark"
-            type="checkbox"
-            className="w-5 h-5 accent-red-600 rounded bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer"
-            onChange={(e) => setForm({ ...form, isDarkMark: e.target.checked })}
-          />
-          <label htmlFor="isDarkMark" className="text-sm font-semibold text-red-200 cursor-pointer select-none">
-            Register for Dark Mark Bounty Round
-          </label>
+        {/* REGISTRATION CHECKBOXES */}
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center gap-3 p-3 bg-red-950/20 border border-red-900/30 rounded-lg group hover:border-red-500/50 transition-colors">
+            <input
+              id="isObscure"
+              name="isObscure"
+              type="checkbox"
+              className="w-5 h-5 accent-red-600 rounded bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer"
+              onChange={(e) => setForm({ ...form, isObscure: e.target.checked })}
+            />
+            <label htmlFor="isObscure" className="text-sm font-semibold text-red-200 cursor-pointer select-none">
+              Register for The Order of Obscure Code
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 p-3 bg-red-950/20 border border-red-900/30 rounded-lg group hover:border-red-500/50 transition-colors">
+            <input
+              id="isDarkMark"
+              name="isDarkMark"
+              type="checkbox"
+              className="w-5 h-5 accent-red-600 rounded bg-zinc-900 border-zinc-700 focus:ring-0 cursor-pointer"
+              onChange={(e) => setForm({ ...form, isDarkMark: e.target.checked })}
+            />
+            <label htmlFor="isDarkMark" className="text-sm font-semibold text-red-200 cursor-pointer select-none">
+              Register for Dark Mark Bounty
+            </label>
+          </div>
         </div>
 
         <button

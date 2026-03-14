@@ -41,7 +41,14 @@ const GamesPage = () => {
         await initializeUser(res.user.id, res.user.email || "");
       }
 
+      const state = useCompetitionStore.getState();
       if (title === "The Order of the Obscure Code") {
+        if (!state.isObscure && !res.isAdmin) {
+          toast.error("Access Denied: You are not registered for The Order of Obscure.");
+          setLoadingIdx(null);
+          return;
+        }
+
         if (res.isAdmin) {
           navigate("/admin");
         } else {
@@ -49,7 +56,6 @@ const GamesPage = () => {
         }
       } else {
         // Dark Mark Bounty Logic
-        const state = useCompetitionStore.getState();
         if (!state.isDarkMark && !res.isAdmin) {
           toast.error("Access Denied: You are not registered for the Dark Mark Bounty.");
           setLoadingIdx(null);

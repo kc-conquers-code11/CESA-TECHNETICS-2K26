@@ -52,7 +52,14 @@ export const CompetitionTimeline = () => {
   const { roundStatus, currentRound, isDarkMark } = useCompetitionStore();
   let currentSteps = [...steps];
   if (isDarkMark) {
-    currentSteps = [{
+    currentSteps = [
+      {
+    id: 'rules',
+    title: 'Competition Rules',
+    description: 'Read and accept the rules',
+    icon: <FileText className="w-4 h-4" />,
+  },
+  {
       id: 'darkmark',
       title: 'Bonus: Dark Mark Bounty',
       description: 'The ultimate extraction challenge',

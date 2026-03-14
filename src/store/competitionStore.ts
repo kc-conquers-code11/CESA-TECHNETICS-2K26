@@ -18,6 +18,7 @@ interface CompetitionState {
   mcqStartTime: number | null;
   flowchartStartTime: number | null;
   isDarkMark: boolean;
+  isObscure: boolean;
   teamName: string | null;
   // phoneNumber: string | null;
 
@@ -59,6 +60,7 @@ const initialState = {
   userId: null,
   email: null,
   isDarkMark: false,
+  isObscure: false,
   teamName: null,
   // phoneNumber: null,
 };
@@ -97,6 +99,7 @@ export const useCompetitionStore = create<CompetitionState>()(
             tabSwitchCount: data.tab_switches || 0,
             roundStatus: newRoundStatus,
             isDarkMark: data.is_dark_mark || false,
+            isObscure: data.is_obscure || false,
             teamName: data.team_name || null,
             // phoneNumber: data.phone_number || null,
           });
@@ -135,6 +138,7 @@ export const useCompetitionStore = create<CompetitionState>()(
           tabSwitchCount: data.tab_switches,
           roundStatus: newRoundStatus,
           isDarkMark: data.is_dark_mark || false,
+          isObscure: data.is_obscure || false,
           teamName: data.team_name || null,
           // phoneNumber: data.phone_number || null,
         });
