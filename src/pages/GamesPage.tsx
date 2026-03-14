@@ -32,10 +32,10 @@ const GamesPage = () => {
 
     try {
       const res = await loginApi({ email, password: pass });
-      
+
       // Store Token
       localStorage.setItem("token", res.session?.access_token || "");
-      
+
       // Initialize Zustand Store
       if (res.user) {
         await initializeUser(res.user.id, res.user.email || "");
@@ -149,22 +149,21 @@ const GamesPage = () => {
           {bookEvents.map((event, idx) => (
             <motion.div
               key={idx}
-              className={`flex-1 min-h-full relative overflow-hidden flex flex-col p-8 md:p-12 md:pb-14
-                ${event.isLeft ? 'md:pr-14' : 'md:pl-14'}
-                bg-[#f2e0b5]
-                shadow-[inset_0_0_100px_rgba(139,115,85,0.4)]
-                parchment-rough-edges
-              `}
-              style={{
-                background: `linear-gradient(${event.isLeft ? 'to right' : 'to left'}, #f2e0b5, #e8d19e)`
-              }}
+              className={`flex-1 min-h-full relative overflow-hidden flex flex-col p-8 md:p-12 md:pb-14 ${event.isLeft ? 'md:pr-14' : 'md:pl-14'}`}
             >
+              {/* ── PARCHMENT BACKGROUND LAYER (Isolated Filter) ── */}
+              <div
+                className="absolute inset-0 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10"
+                style={{
+                  background: `linear-gradient(${event.isLeft ? 'to right' : 'to left'}, #f2e0b5, #e8d19e)`
+                }}
+              />
               {/* Complex Parchment Layering */}
               <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')]" />
               <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stained-paper.png')]" />
 
               {/* Subtle Page Fold Shadow (Non-linear transition) */}
-              <div 
+              <div
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -180,7 +179,7 @@ const GamesPage = () => {
                     left: 0,
                     background: 'linear-gradient(to right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05), transparent)'
                   })
-                }} 
+                }}
               />
 
               {/* Inked Borders */}
@@ -267,8 +266,8 @@ const GamesPage = () => {
                         <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-10 transition-opacity bg-white/20 blur-md rounded" />
                       </motion.button>
                       <div className="text-center">
-                        <Link 
-                          to="/signup" 
+                        <Link
+                          to="/signup"
                           className="font-crimson italic text-[#3d2618]/60 hover:text-[#8b6e2e] transition-colors text-sm md:text-base border-b border-[#3d2618]/10 hover:border-[#8b6e2e]"
                         >
                           New to the Realm? Register Your Intent

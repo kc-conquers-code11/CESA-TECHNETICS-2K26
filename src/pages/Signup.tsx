@@ -118,7 +118,9 @@ export default function Signup() {
         {/* ── THE LEATHER BOOK COVER ── */}
         <div className="absolute inset-x-0 -inset-y-6 bg-[#1a0f08] rounded-[6px] shadow-[0_60px_100px_-20px_rgba(0,0,0,0.95)] border-r-8 border-b-8 border-black/50 transform scale-[1.01] -z-10" />
 
-        <div className="flex-1 relative overflow-hidden flex flex-col p-8 md:p-12 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges rounded-sm">
+        <div className="flex-1 relative overflow-hidden flex flex-col p-8 md:p-12 rounded-sm">
+          {/* ── PARCHMENT BACKGROUND LAYER (Isolated Filter) ── */}
+          <div className="absolute inset-0 bg-[#f2e0b5] shadow-[inset_0_0_100px_rgba(139,115,85,0.4)] parchment-rough-edges -z-10" />
           {/* Complex Parchment Layering */}
           <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/rice-paper.png')]" />
           <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stained-paper.png')]" />
