@@ -125,35 +125,29 @@ const GithubRound = () => {
                     The Ancient Runes are ready for manifestation. Deploy your solution to the magical cloud and submit the enchanted portal link below.
                 </p>
 
-                <div className="bg-black/60 border border-[#d4af37]/30 rounded-2xl p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-8 hover:border-[#d4af37]/60 transition-all shadow-2xl relative group overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 to-transparent pointer-events-none" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <a
-                            href="https://technetics-main.vercel.app/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-16 h-16 rounded-2xl bg-[#d4af37]/15 flex items-center justify-center text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/25 hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.1)] group/ext"
-                        >
-                            <ExternalLink size={36} className="group-hover/ext:rotate-12 transition-transform" />
-                        </a>
+                <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#d4af37]/40 transition-all">
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-xl bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37]">
+                            <ExternalLink size={32} />
+                        </div>
                         <div className="text-left">
-                            <p className="text-xs font-harry tracking-[0.2em] text-[#d4af37] mb-2 uppercase opacity-80">Reference Scroll</p>
-                            <h3 className="text-xl md:text-2xl font-wizard text-white tracking-widest mb-1">Requirement UI Preview</h3>
-                            <a
-                                href="https://technetics-main.vercel.app/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm font-code text-gray-400 hover:text-[#d4af37] transition-colors flex items-center gap-2"
-                            >
-                                technetics-main.vercel.app <Activity size={12} className="text-green-500 animate-pulse" />
-                            </a>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
+                                Requirement
+                            </p>
+                            <h3 className="text-white font-bold font-sans tracking-widest pt-1 uppercase">
+                                UI Preview
+                            </h3>
                         </div>
                     </div>
-                    <div className="hidden md:block h-12 w-px bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent mx-4" />
-                    <div className="text-right hidden md:block">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Manifestation Target</p>
-                        <p className="text-[#d4af37] font-code text-xs">Vercel Cloud • SSL Secured</p>
-                    </div>
+                    <a
+                        href="https://technetics-main.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-6 py-3 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] font-sans font-bold uppercase text-xs hover:bg-[#d4af37]/20 transition-all flex items-center gap-2 shrink-0 tracking-widest"
+                    >
+                        <span>Open Preview</span>
+                        <ExternalLink size={16} />
+                    </a>
                 </div>
 
                 <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 space-y-4 text-left max-w-2xl mx-auto border-t-2 border-t-[#d4af37]/40 relative z-10">
@@ -177,7 +171,7 @@ const GithubRound = () => {
                                 <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
                             </div>
                             <div>
-                                <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
+                                <h4 className="text-white font-bold font-sans text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
                                 <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_HTML</p>
                             </div>
                         </a>
@@ -195,7 +189,7 @@ const GithubRound = () => {
                                 <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
                             </div>
                             <div>
-                                <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
+                                <h4 className="text-white font-bold font-sans text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
                                 <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_REACT</p>
                             </div>
                         </a>

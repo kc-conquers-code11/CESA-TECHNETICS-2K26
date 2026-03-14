@@ -272,7 +272,7 @@ const GithubRound = () => {
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
                       Requirement
                     </p>
-                    <h3 className="text-white font-wizard text-sm tracking-widest pt-1 uppercase">
+                    <h3 className="text-white font-bold font-sans tracking-widest pt-1 uppercase">
                       UI Preview
                     </h3>
                   </div>
@@ -281,7 +281,7 @@ const GithubRound = () => {
                   href="https://technetics-main.vercel.app/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] font-wizard hover:bg-[#d4af37]/20 transition-all flex items-center gap-2 shrink-0"
+                  className="px-6 py-3 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] font-sans font-bold uppercase text-xs hover:bg-[#d4af37]/20 transition-all flex items-center gap-2 shrink-0 tracking-widest"
                 >
                   <span>Open Preview</span>
                   <ExternalLink size={16} />
@@ -311,7 +311,7 @@ const GithubRound = () => {
                       <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
                     </div>
                     <div>
-                      <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
+                      <h4 className="text-white font-bold font-sans text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
                       <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_HTML</p>
                     </div>
                   </a>
@@ -329,7 +329,7 @@ const GithubRound = () => {
                       <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
                     </div>
                     <div>
-                      <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
+                      <h4 className="text-white font-bold font-sans text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
                       <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_REACT</p>
                     </div>
                   </a>
