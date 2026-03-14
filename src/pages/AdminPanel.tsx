@@ -356,7 +356,7 @@ export default function AdminPanel() {
         } catch (e) { return <span className="text-zinc-600">--:--:--</span>; }
     };
 
-    const handleLogout = async () => { await supabase.auth.signOut(); navigate('/login'); };
+    const handleLogout = async () => { await supabase.auth.signOut(); navigate('/games'); };
 
     const handleUserAction = async (action: 'freeze' | 'unfreeze' | 'dq', userId: string) => {
         const targetStatus = action === 'freeze' ? 'frozen' : action === 'unfreeze' ? 'active' : 'disqualified';
