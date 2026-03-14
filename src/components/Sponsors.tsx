@@ -56,6 +56,10 @@ const scrollingSponsors = [
   { name: 'CorePulse',   logo: '/sponsors/netflix.jpg' },
 ];
 
+const specialSponsors = [
+  { name: 'Quick Rentals',   logo: '/sponsors/QuickRentals_Logo.png' },
+];
+
 // Duplicate for seamless infinite scroll
 const allScrolling = [...scrollingSponsors, ...scrollingSponsors];
 
@@ -139,9 +143,107 @@ const HouseSponsorCard = ({ house, index }: { house: typeof houses[0]; index: nu
   </motion.div>
 );
 
+// ── SPECIAL SPONSOR CARD ──────────────────────────────────────────────────────
+const SpecialSponsorCard = ({ sponsor, index }: { sponsor: typeof specialSponsors[0]; index: number }) => {
+  const theme = {
+    primary: '#1e1b4b', // Deep Midnight Indigo
+    secondary: '#a855f7', // Radiant Purple
+    glow: 'rgba(168, 85, 247, 0.4)',
+    border: 'rgba(168, 85, 247, 0.6)',
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9, y: 30 }}
+      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.7, delay: index * 0.1 }}
+      className="relative flex flex-col items-center group max-w-sm w-full h-auto"
+      style={{ perspective: '1200px' }}
+    >
+      {/* Premium frame card - More rectangular, reduced size */}
+      <div
+        className="relative w-full rounded-xl flex flex-col items-center py-6 px-5 transition-all duration-700 group-hover:-translate-y-2 border-2"
+        style={{
+          background: `linear-gradient(135deg, ${theme.primary}ee, #021516)`,
+          borderColor: theme.border,
+          boxShadow: `0 0 40px ${theme.glow}, inset 0 0 60px rgba(0,0,0,0.6)`,
+        }}
+      >
+        {/* Elite Badge - Now inside the moving container so it animates with it */}
+        <div
+          className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl z-30 whitespace-nowrap"
+          style={{
+            background: theme.secondary,
+            color: '#021516',
+          }}
+        >
+          Elite Gaming Partner
+        </div>
+
+        {/* Shine Overlay - Contained within a separate absolute div to prevent badge clipping */}
+        <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none z-20">
+           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+            <div className="absolute -inset-full h-full w-1/2 block transform -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-shine" />
+          </div>
+        </div>
+
+        {/* Ornate corner pieces - Smaller and tighter */}
+        {['top-3 left-3', 'top-3 right-3', 'bottom-3 left-3', 'bottom-3 right-3'].map((pos, i) => (
+          <div
+            key={i}
+            className={`absolute ${pos} w-4 h-4 pointer-events-none z-30`}
+            style={{
+              borderTop: i < 2 ? `2px solid ${theme.secondary}` : 'none',
+              borderBottom: i >= 2 ? `2px solid ${theme.secondary}` : 'none',
+              borderLeft: i % 2 === 0 ? `2px solid ${theme.secondary}` : 'none',
+              borderRight: i % 2 === 1 ? `2px solid ${theme.secondary}` : 'none',
+            }}
+          />
+        ))}
+
+        {/* Sponsor Logo — Maximized size in the rectangle */}
+        <div
+          className="w-full h-32 md:h-44 mb-4 transition-all duration-700 group-hover:scale-105 flex items-center justify-center relative z-10"
+          style={{ filter: `drop-shadow(0 0 20px ${theme.glow})` }}
+        >
+          <img 
+            src={sponsor.logo} 
+            alt={sponsor.name} 
+            className="w-full h-full object-contain p-2" 
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('style');
+            }}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px mb-4" style={{ background: `linear-gradient(90deg, transparent, ${theme.secondary}, transparent)` }} />
+
+        {/* Sponsor Name Badge — Compact and clean */}
+        <div
+          className="w-full h-12 rounded-lg flex items-center justify-center"
+          style={{
+            background: 'rgba(0,0,0,0.4)',
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          <p
+            className="font-black text-sm md:text-lg tracking-widest uppercase"
+            style={{ color: theme.secondary, fontFamily: "'Cinzel', serif" }}
+          >
+            {sponsor.name}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // ── SPONSORS SECTION ──────────────────────────────────────────────────────────
 const Sponsors = () => (
-  <section id="sponsors" className="bg-[#021516] px-6 md:px-12 py-24 text-white overflow-hidden">
+  <section id="sponsors" className="bg-[#021516] px-4 md:px-12 py-24 text-white overflow-hidden">
     <div className="max-w-7xl mx-auto">
 
       {/* Header */}
@@ -165,6 +267,27 @@ const Sponsors = () => (
         {houses.map((house, i) => (
           <HouseSponsorCard key={house.name} house={house} index={i} />
         ))}
+      </div>
+
+       {/* Divider */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="flex-1 h-px bg-[#d4af37]/20" />
+        <span className="text-[#d4af37]/50 text-xs uppercase tracking-widest font-bold">Our Gaming Partners</span>
+        <div className="flex-1 h-px bg-[#d4af37]/20" />
+      </div>
+
+      <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10 mb-16 px-6 overflow-visible">
+        {/* Left Golden Strip */}
+        <div className="hidden md:block flex-1 h-[2px] bg-gradient-to-r from-transparent via-[#d4af37] to-[#d4af37]/60 shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
+        
+        <div className="flex flex-wrap justify-center gap-8 w-full md:w-auto">
+          {specialSponsors.map((sponsor, i) => (
+            <SpecialSponsorCard key={sponsor.name} sponsor={sponsor} index={i} />
+          ))}
+        </div>
+
+        {/* Right Golden Strip */}
+        <div className="hidden md:block flex-1 h-[2px] bg-gradient-to-l from-transparent via-[#d4af37] to-[#d4af37]/60 shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
       </div>
 
       {/* Divider */}
