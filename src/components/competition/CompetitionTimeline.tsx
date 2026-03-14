@@ -66,6 +66,9 @@ export const CompetitionTimeline = () => {
       icon: <Check className="w-4 h-4 text-red-500" />,
     }];
   }
+  else {
+    currentSteps = [...steps]
+  }
 
   return (
     <div className="glass-strong rounded-xl p-5 h-fit w-full">

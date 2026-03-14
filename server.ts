@@ -212,7 +212,7 @@ if __name__ == "__main__":
     if (language === 'java') {
         const sanitizedCode = userCode.replace(/public\s+class\s+Solution/, 'class Solution');
         
-        let runnerCalls = testCases.map((tc: any, i: number) => {
+        const runnerCalls = testCases.map((tc: any, i: number) => {
             const args = Object.values(tc.params).map(val => toJava(val)).join(', ');
             return `
             try {
@@ -244,7 +244,7 @@ public class Main {
 
     // 4. C++ (Dynamic Main)
     if (language === 'cpp') {
-        let runnerCalls = testCases.map((tc: any, i: number) => {
+        const runnerCalls = testCases.map((tc: any, i: number) => {
             const args = Object.values(tc.params).map(val => toCpp(val)).join(', ');
             return `
             try {
@@ -536,7 +536,7 @@ setInterval(async () => {
             // Update Leaderboard Logic
             if (job.user_id && job.user_id !== 'anonymous') {
                 const { data: allExecs } = await supabase.from('executions').select('score, metadata').eq('user_id', job.user_id).or('status.eq.completed,status.eq.success');
-                let totalScore = 0;
+                const totalScore = 0;
                 // Map to store best score per problem
                 const bestScores: Record<string, number> = {};
                 if(allExecs) {

@@ -10,7 +10,7 @@ const fallbackUrl = 'https://example.supabase.co';
 const fallbackAnonKey = 'public-anon-key-not-configured';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // eslint-disable-next-line no-console
+   
   console.error(
     '[Supabase] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Add them to .env.local to enable auth + DB.'
   );
