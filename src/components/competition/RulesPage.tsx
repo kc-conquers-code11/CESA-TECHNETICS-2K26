@@ -26,6 +26,7 @@ const formatRuleText = (text: string) => {
     "misbehaving",
     "forbidden",
     "instant disqualification",
+    "TWO instances"
   ];
   
   const goodWords = [
@@ -34,6 +35,8 @@ const formatRuleText = (text: string) => {
     "Transparency Protocol:",
     "Persistence Protocol:",
     "Round Objective:",
+    "only one card",
+    "Total Duration:"
   ];
 
   const warningWords = [
@@ -48,6 +51,7 @@ const formatRuleText = (text: string) => {
     "STRICTLY NO AI",
     "No AI tools",
     "Event Head",
+    "code cannot be reused",
   ];
 
   // Combine all keywords for the regex split
@@ -287,12 +291,13 @@ export const RulesPage = () => {
     mcq: Rule[];
     flowchart: Rule[];
     coding: Rule[];
-  }>({ mcq: [], flowchart: [], coding: [] });
+    darkmark: Rule[];
+  }>({ mcq: [], flowchart: [], coding: [], darkmark: [] });
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollPct, setScrollPct] = useState(0);
 
-  const { acceptRules, currentRound, userId, syncSession } = useCompetitionStore();
+  const { acceptRules, currentRound, userId, syncSession, activeCompetition } = useCompetitionStore();
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -339,6 +344,7 @@ export const RulesPage = () => {
           mcq: data.filter((r: any) => r.round_slug === "mcq"),
           flowchart: data.filter((r: any) => r.round_slug === "flowchart"),
           coding: data.filter((r: any) => r.round_slug === "coding"),
+          darkmark: data.filter((r: any) => r.round_slug === "darkmark"),
         });
       }
     };
@@ -425,9 +431,37 @@ export const RulesPage = () => {
             <ParchmentDivider />
 
             <div className="space-y-4">
-              <RuleSection title="Round I — Aptitude (MCQ)" icon={<ListChecks className="w-5 h-5" />} rules={groupedRules.mcq} color="blue" defaultOpen />
-              <RuleSection title="Round II — Bug Quest (DEBUGGING)" icon={<Workflow className="w-5 h-5" />} rules={groupedRules.flowchart} color="amber" />
-              <RuleSection title="Round III — Obscure Codes (HACKERTHON)" icon={<Code className="w-5 h-5" />} rules={groupedRules.coding} color="red" />
+              {activeCompetition === "darkmark" ? (
+                <RuleSection
+                  title="Dark Mark Bounty — The Ultimate Extraction"
+                  icon={<Shield className="w-5 h-5" />}
+                  rules={groupedRules.darkmark}
+                  color="red"
+                  defaultOpen
+                />
+              ) : (
+                <>
+                  <RuleSection
+                    title="Round I — Aptitude (MCQ)"
+                    icon={<ListChecks className="w-5 h-5" />}
+                    rules={groupedRules.mcq}
+                    color="blue"
+                    defaultOpen
+                  />
+                  <RuleSection
+                    title="Round II — Bug Quest (DEBUGGING)"
+                    icon={<Workflow className="w-5 h-5" />}
+                    rules={groupedRules.flowchart}
+                    color="amber"
+                  />
+                  <RuleSection
+                    title="Round III — Obscure Codes (HACKERTHON)"
+                    icon={<Code className="w-5 h-5" />}
+                    rules={groupedRules.coding}
+                    color="red"
+                  />
+                </>
+              )}
             </div>
 
             <ParchmentDivider />
