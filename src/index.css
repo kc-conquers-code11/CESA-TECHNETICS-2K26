@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -95,11 +96,26 @@
     @apply border-border;
   }
 
+  html {
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
     /* IMPORTANT: Only hide horizontal overflow to allow scrolling */
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background-color: #021516;
+    color: white;
   }
 
   h1,
@@ -411,9 +427,17 @@
   }
 
   /* Selection - Red */
-  ::selection {
-    @apply bg-primary/40 text-foreground;
-  }
+
+::selection {
+  background: #FFD700;
+  -webkit-text-fill-color: #000;
+  text-shadow: none;
+}
+::-moz-selection {
+  background: #FFB702;
+  -webkit-text-fill-color: black;
+  color: black;
+}
 
   /* 80s Neon Border */
   .neon-border {
@@ -422,6 +446,39 @@
       inset 0 0 10px hsla(0, 85%, 50%, 0.3),
       0 0 10px hsla(0, 85%, 50%, 0.3),
       0 0 20px hsla(0, 85%, 50%, 0.2);
+  }
+
+  /* --- TECHNETICS CUSTOM STYLES --- */
+  @font-face {
+    font-family: 'BlackChancery';
+    src: url('/fonts/BLKCHCRY.woff2') format('woff2'),
+         url('/fonts/BLKCHCRY.woff') format('woff'),
+         url('/fonts/BLKCHCRY.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: 'Harry P';
+    src: url('/fonts/HarryP.woff2') format('woff2'),
+         url('/fonts/HarryP.woff') format('woff'),
+         url('/fonts/HarryP.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .font-harry {
+    font-family: 'Harry P', serif;
+  }
+
+  .font-wizard {
+    font-family: 'BlackChancery', serif;
+  }
+
+  .font-manrope {
+    font-family: 'Manrope', sans-serif;
   }
 
   /* Stranger Things Button Hover */
@@ -543,3 +600,14 @@
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
+
+.parchment-rough-edges {
+  filter: url('#deckle-edges') drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.ink-text {
+  color: #1a0f08;
+  text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.2);
+}
+
+

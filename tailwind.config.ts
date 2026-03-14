@@ -91,6 +91,8 @@ export default {
         sans: ["Inter", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
         typewriter: ["Special Elite", "cursive"],
+        harry: ["Harry P", "serif"],
+        wizard: ["BlackChancery", "serif"],
       },
       keyframes: {
         "accordion-down": {

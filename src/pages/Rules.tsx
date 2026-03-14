@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useCompetitionStore } from "@/store/competitionStore";
 import { supabase } from "@/lib/supabaseClient";
-import { WaitingArea } from "./WaitingArea";
+import WaitingArea from "./WaitingListPage";
 
 // ─── Highlight dangerous / warning keywords ───────────────────────────────────
 const formatRuleText = (text: string) => {
@@ -719,3 +719,5 @@ export const RulesPage = () => {
     </div>
   );
 };
+
+export default RulesPage;

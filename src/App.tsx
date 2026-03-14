@@ -13,6 +13,15 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import DarkMarkLogin from "./pages/DarkMarkLogin";
 
+// Technetics Pages & Layout
+import TechneticsLayout from "./layouts/TechneticsLayout";
+import GamesPage from "./pages/GamesPage";
+import AptitudeRound from "./pages/AptitudeRound";
+import GithubRound from "./pages/GithubRound";
+import HackathonSelection from "./pages/HackathonSelection";
+import WaitingListPage from "./pages/WaitingListPage";
+import Rules from "./pages/Rules";
+
 //  Import ProtectedRoute
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 const queryClient = new QueryClient();
@@ -30,15 +39,21 @@ const App = () => (
           <Route path="/dark-mark-login" element={<DarkMarkLogin />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/*  HOME PAGE IS NOW REDIRECTED TO LOGIN */}
-          <Route path="/" element={<Login />} />
+          {/* 🧙‍♂️ TECHNETICS ROUTES */}
+          <Route path="/" element={<TechneticsLayout />} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/aptitude-round" element={<AptitudeRound />} />
+          <Route path="/github-round" element={<GithubRound />} />
+          <Route path="/hackathon-selection" element={<HackathonSelection />} />
+          <Route path="/waiting-list" element={<WaitingListPage />} />
+          <Route path="/rules-technetics" element={<Rules />} />
 
           {/* 🔒 PROTECTED USER ROUTES */}
           <Route 
             path="/rules" 
             element={
               <ProtectedRoute>
-                <Index />
+                <Rules />
               </ProtectedRoute>
             } 
           />
