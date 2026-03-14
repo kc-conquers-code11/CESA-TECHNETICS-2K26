@@ -114,14 +114,14 @@ const GithubRound = () => {
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden">
             {/* MAIN CONTENT */}
-            <div className="flex-1 bg-[#051112]/40 border border-[#d4af37]/20 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col justify-center text-center">
+            <div className="flex-1 bg-[#051112]/40 border border-[#d4af37]/20 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-y-auto scrollbar-thin scrollbar-thumb-[#d4af37]/20 flex flex-col justify-start text-center">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
 
-                <h2 className="text-4xl md:text-5xl font-wizard tracking-widest text-[#FFD700] mb-6">
+                <h2 className="text-4xl md:text-5xl font-wizard tracking-widest text-[#FFD700] mb-4 mt-4">
                     The Enchanted Link
                 </h2>
 
-                <p className="text-gray-400 font-sans leading-relaxed mb-10 text-lg max-w-2xl mx-auto">
+                <p className="text-gray-400 font-sans leading-relaxed mb-8 text-lg max-w-2xl mx-auto">
                     The Ancient Runes are ready for manifestation. Deploy your solution to the magical cloud and submit the enchanted portal link below.
                 </p>
 
@@ -150,7 +150,7 @@ const GithubRound = () => {
                     </a>
                 </div>
 
-                <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 space-y-4 text-left max-w-2xl mx-auto border-t-2 border-t-[#d4af37]/40 relative z-10">
+                <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-8 space-y-4 text-left max-w-2xl mx-auto border-t-2 border-t-[#d4af37]/40 relative z-10">
                     <p className="text-[10px] font-black text-[#d4af37]/70 uppercase tracking-[0.2em] flex items-center gap-2">
                         <Github size={14} /> Bug Hunt Challenge Repositories
                     </p>
@@ -256,7 +256,7 @@ const GithubRound = () => {
                     </div>
                 </div>
 
-                <div className="mt-14 flex justify-center">
+                <div className="mt-10 mb-6 flex justify-center shrink-0">
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !submissionLink}
