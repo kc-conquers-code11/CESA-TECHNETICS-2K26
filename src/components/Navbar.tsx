@@ -1,3 +1,4 @@
+// frontend/CESA-TECHNETICS-2K26/src/components/Navbar.tsx
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
