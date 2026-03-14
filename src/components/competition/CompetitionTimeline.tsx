@@ -49,25 +49,28 @@ const getStatusIcon = (status: RoundStatus) => {
 };
 
 export const CompetitionTimeline = () => {
-  const { roundStatus, currentRound, isDarkMark } = useCompetitionStore();
-  let currentSteps = [...steps];
-  if (isDarkMark) {
+  const { roundStatus, currentRound, activeCompetition } = useCompetitionStore();
+  
+  let currentSteps: TimelineStep[] = [];
+  
+  if (activeCompetition === 'darkmark') {
     currentSteps = [
       {
-    id: 'rules',
-    title: 'Competition Rules',
-    description: 'Read and accept the rules',
-    icon: <FileText className="w-4 h-4" />,
-  },
-  {
-      id: 'darkmark',
-      title: 'Bonus: Dark Mark Bounty',
-      description: 'The ultimate extraction challenge',
-      icon: <Check className="w-4 h-4 text-red-500" />,
-    }];
-  }
-  else {
-    currentSteps = [...steps]
+        id: 'rules',
+        title: 'Competition Rules',
+        description: 'Read and accept the rules',
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        id: 'darkmark',
+        title: 'Bonus: Dark Mark Bounty',
+        description: 'The ultimate extraction challenge',
+        icon: <Check className="w-4 h-4 text-red-500" />,
+      }
+    ];
+  } else {
+    // Default to Obscure Code steps
+    currentSteps = [...steps];
   }
 
   return (
@@ -75,8 +78,8 @@ export const CompetitionTimeline = () => {
       {/* Decorative background element */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#8b6e2e]/40 to-transparent" />
       
-      <h2 className="font-wizard text-lg font-bold text-[#d4af37] tracking-[0.2em] mb-6 uppercase border-b border-[#8b6e2e]/20 pb-2">
-        {isDarkMark ? "Extraction Progress" : "Magical Progress"}
+      <h2 className="font-inter text-lg font-bold text-[#d4af37] tracking-[0.2em] mb-6 uppercase border-b border-[#8b6e2e]/20 pb-2">
+        {activeCompetition === 'darkmark' ? "Extraction Progress" : "Magical Progress"}
       </h2>
       
       <div className="flex flex-col">

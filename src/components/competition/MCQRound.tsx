@@ -391,7 +391,7 @@ export const MCQRound = () => {
           </div>
 
           {/* Question Text */}
-          <h2 className="text-xl font-semibold mb-2 leading-relaxed select-none text-zinc-100">
+          <h2 className="text-xl font-semibold font-sans mb-2 leading-relaxed select-none text-zinc-100">
             {currentQuestion.title}
           </h2>
           {currentQuestion.description && (

@@ -19,10 +19,12 @@ interface CompetitionState {
   flowchartStartTime: number | null;
   isDarkMark: boolean;
   isObscure: boolean;
+  activeCompetition: 'obscure' | 'darkmark' | null;
   teamName: string | null;
   // phoneNumber: string | null;
 
   // Actions
+  setActiveCompetition: (comp: 'obscure' | 'darkmark') => void;
   initializeUser: (userId: string, email: string) => Promise<void>;
   acceptRules: () => Promise<void>;
   syncSession: (data: any) => void;
@@ -61,6 +63,7 @@ const initialState = {
   email: null,
   isDarkMark: false,
   isObscure: false,
+  activeCompetition: null,
   teamName: null,
   // phoneNumber: null,
 };
@@ -72,6 +75,10 @@ export const useCompetitionStore = create<CompetitionState>()(
   persist(
     (set, get) => ({
       ...initialState,
+
+      setActiveCompetition: (comp) => {
+        set({ activeCompetition: comp });
+      },
 
       initializeUser: async (userId, email) => {
         set({ userId, email });
