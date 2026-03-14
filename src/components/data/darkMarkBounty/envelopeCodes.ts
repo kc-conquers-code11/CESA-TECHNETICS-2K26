@@ -1,5 +1,5 @@
 export const ENVELOPE_CODES = {
-  // Yellow = Easy (50pts)
+  //Yellow = Easy (50pts)
   DM101: { color: "yellow", difficulty: "easy", points: 50 },
   DM102: { color: "yellow", difficulty: "easy", points: 50 },
   DM103: { color: "yellow", difficulty: "easy", points: 50 },

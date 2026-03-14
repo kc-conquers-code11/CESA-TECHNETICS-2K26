@@ -245,7 +245,7 @@ const GithubRound = () => {
         </aside>
 
         <main className="flex-1 p-4 md:p-8 flex flex-col items-center justify-center overflow-hidden">
-          <div className="w-full max-w-4xl h-full flex flex-col">
+          <div className="w-full max-w-4xl h-full flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-[#1f2933] scrollbar-track-transparent">
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -263,29 +263,77 @@ const GithubRound = () => {
                 your solution in your own digital vault.
               </p>
 
-              <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#d4af37]/40 transition-all">
+              <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#d4af37]/40 transition-all">
                 <div className="flex items-center gap-5">
                   <div className="w-14 h-14 rounded-xl bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37]">
-                    <Github size={32} />
+                    <ExternalLink size={32} />
                   </div>
                   <div className="text-left">
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
-                      Source Repository
+                      Requirement
                     </p>
-                    <p className="text-white font-code text-sm break-all tracking-tight">
-                      github.com/kc-conquers-code11/CESA-TECHNETICS-2K26
-                    </p>
+                    <h3 className="text-white font-wizard text-sm tracking-widest pt-1 uppercase">
+                      UI Preview
+                    </h3>
                   </div>
                 </div>
                 <a
-                  href="https://github.com/kc-conquers-code11/CESA-TECHNETICS-2K26.git"
+                  href="https://technetics-main.vercel.app/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-3 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] font-wizard hover:bg-[#d4af37]/20 transition-all flex items-center gap-2 shrink-0"
                 >
-                  <span>Clone Repository</span>
+                  <span>Open Preview</span>
                   <ExternalLink size={16} />
                 </a>
+              </div>
+
+              {/* Challenge repositories for participants */}
+              <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 space-y-4 text-left max-w-2xl mx-auto border-t-2 border-t-[#d4af37]/40">
+                <p className="text-[10px] font-black text-[#d4af37]/70 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Github size={14} /> Bug Hunt Challenge Repositories
+                </p>
+                <p className="text-[11px] text-gray-400 leading-relaxed italic">
+                  Select the scroll appropriate for your mastery level. Clone the repo, mend the logic, and manifest your submission link below.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                  <a
+                    href="https://github.com/sidd-gupta05/BUG_HUNT_HTML"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-3 p-5 rounded-xl bg-black/40 border border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-black/60 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+                        1st Year (HTML)
+                      </span>
+                      <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
+                      <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_HTML</p>
+                    </div>
+                  </a>
+
+                  <a
+                    href="https://github.com/sidd-gupta05/BUG_HUNT_REACT"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col gap-3 p-5 rounded-xl bg-black/40 border border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-black/60 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+                        Others (React)
+                      </span>
+                      <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
+                      <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_REACT</p>
+                    </div>
+                  </a>
+                </div>
               </div>
 
               <div className="space-y-5 text-left max-w-2xl mx-auto w-full">

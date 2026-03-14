@@ -20,20 +20,20 @@ import { toast } from 'sonner';
 const GithubRound = () => {
     // useAntiCheat(); // Anti-cheat disabled for this round
     const { completeRound, email, userId } = useCompetitionStore();
-      const buttonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem', // 2 units
-  padding: '0.75rem 1.5rem', // py-3 px-6
-  borderRadius: '0.75rem', // rounded-xl
-  background: 'linear-gradient(to right, #FFB702, #FFD05A)',
-  color: 'black',
-  fontWeight: 600, // font-semibold
-  boxShadow: '0 0 20px rgba(255, 183, 0, 0.6)',
-  transition: 'all 0.3s ease', // duration-300
-  cursor: 'pointer',
-};
-    
+    const buttonStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem', // 2 units
+        padding: '0.75rem 1.5rem', // py-3 px-6
+        borderRadius: '0.75rem', // rounded-xl
+        background: 'linear-gradient(to right, #FFB702, #FFD05A)',
+        color: 'black',
+        fontWeight: 600, // font-semibold
+        boxShadow: '0 0 20px rgba(255, 183, 0, 0.6)',
+        transition: 'all 0.3s ease', // duration-300
+        cursor: 'pointer',
+    };
+
     const [submissionLink, setSubmissionLink] = useState(() => {
         return localStorage.getItem('github_submission_link') || '';
     });
@@ -65,24 +65,24 @@ const GithubRound = () => {
 
         try {
 
-        // 1. Get the actual Session ID from exam_sessions using the Auth User ID
-        const { data: sessionData, error: sessionError } = await supabase
-            .from('exam_sessions')
-            .select('id')
-            .eq('user_id', userId)
-            .single();
+            // 1. Get the actual Session ID from exam_sessions using the Auth User ID
+            const { data: sessionData, error: sessionError } = await supabase
+                .from('exam_sessions')
+                .select('id')
+                .eq('user_id', userId)
+                .single();
 
-        if (sessionError || !sessionData) {
-            throw new Error("Session not found");
-        }
+            if (sessionError || !sessionData) {
+                throw new Error("Session not found");
+            }
 
-        const sessionId = sessionData.id;
+            const sessionId = sessionData.id;
 
             // 📝 Log to github_submissions table (As requested by user)
             const { error: dbError } = await supabase
                 .from('github_submissions')
                 .insert([{
-                    team_name: email, 
+                    team_name: email,
                     deploy_link: submissionLink.trim(),
                     github_end_time: new Date().toISOString(),
                     user_id: sessionId // Assuming userId is available from useCompetitionStore
@@ -100,7 +100,7 @@ const GithubRound = () => {
             localStorage.removeItem('github_submission_link');
             localStorage.removeItem('github_switches');
             localStorage.removeItem('github_frozen');
-            
+
             await completeRound('flowchart');
             toast.success("Ancient Runes manifested successfully!", { id: toastId });
         } catch (err) {
@@ -128,9 +128,9 @@ const GithubRound = () => {
                 <div className="bg-black/60 border border-[#d4af37]/30 rounded-2xl p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-8 hover:border-[#d4af37]/60 transition-all shadow-2xl relative group overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 to-transparent pointer-events-none" />
                     <div className="flex items-center gap-6 relative z-10">
-                        <a 
-                            href="https://technetics-main.vercel.app/" 
-                            target="_blank" 
+                        <a
+                            href="https://technetics-main.vercel.app/"
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="w-16 h-16 rounded-2xl bg-[#d4af37]/15 flex items-center justify-center text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/25 hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.1)] group/ext"
                         >
@@ -139,9 +139,9 @@ const GithubRound = () => {
                         <div className="text-left">
                             <p className="text-xs font-harry tracking-[0.2em] text-[#d4af37] mb-2 uppercase opacity-80">Reference Scroll</p>
                             <h3 className="text-xl md:text-2xl font-wizard text-white tracking-widest mb-1">Requirement UI Preview</h3>
-                            <a 
-                                href="https://technetics-main.vercel.app/" 
-                                target="_blank" 
+                            <a
+                                href="https://technetics-main.vercel.app/"
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm font-code text-gray-400 hover:text-[#d4af37] transition-colors flex items-center gap-2"
                             >
@@ -156,6 +156,52 @@ const GithubRound = () => {
                     </div>
                 </div>
 
+                <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 space-y-4 text-left max-w-2xl mx-auto border-t-2 border-t-[#d4af37]/40 relative z-10">
+                    <p className="text-[10px] font-black text-[#d4af37]/70 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Github size={14} /> Bug Hunt Challenge Repositories
+                    </p>
+                    <p className="text-[11px] text-gray-400 leading-relaxed italic">
+                        Select the scroll appropriate for your mastery level. Clone the repo, mend the logic, and manifest your submission link below.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                        <a
+                            href="https://github.com/sidd-gupta05/BUG_HUNT_HTML"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col gap-3 p-5 rounded-xl bg-black/40 border border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-black/60 transition-all group"
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+                                    1st Year (HTML)
+                                </span>
+                                <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT HTML</h4>
+                                <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_HTML</p>
+                            </div>
+                        </a>
+
+                        <a
+                            href="https://github.com/sidd-gupta05/BUG_HUNT_REACT"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col gap-3 p-5 rounded-xl bg-black/40 border border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-black/60 transition-all group"
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+                                    Others (React)
+                                </span>
+                                <ExternalLink size={14} className="text-[#d4af37] group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-wizard text-sm tracking-widest mb-1">BUG HUNT REACT</h4>
+                                <p className="text-[10px] text-gray-500 truncate italic">github.com/sidd-gupta05/BUG_HUNT_REACT</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
                 <div className="space-y-6 text-left max-w-2xl mx-auto w-full relative">
                     <div className="flex items-center justify-between mb-2">
                         <label className="text-xs font-semibold tracking-[0.3em] text-[#d4af37] uppercase opacity-90 flex items-center gap-2">
@@ -163,8 +209,8 @@ const GithubRound = () => {
                             Manifest Your Portal
                         </label>
                         {submissionLink && (
-                            <motion.span 
-                                initial={{ opacity: 0 }} 
+                            <motion.span
+                                initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 className="text-[10px] font-black text-green-500 uppercase tracking-widest"
                             >
@@ -172,7 +218,7 @@ const GithubRound = () => {
                             </motion.span>
                         )}
                     </div>
-                    
+
                     <div className="relative group/input">
                         <input
                             type="text"
@@ -183,9 +229,9 @@ const GithubRound = () => {
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
                             {submissionLink ? (
-                                <a 
+                                <a
                                     href={submissionLink.startsWith('http') ? submissionLink : `https://${submissionLink}`}
-                                    target="_blank" 
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-3 bg-[#d4af37]/10 rounded-xl text-[#d4af37] hover:bg-[#d4af37]/20 hover:scale-110 transition-all border border-[#d4af37]/20 shadow-lg group/preview"
                                     title="Preview Manifestation"
