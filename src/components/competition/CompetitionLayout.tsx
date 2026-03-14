@@ -128,8 +128,8 @@ export const CompetitionLayout = () => {
   useEffect(() => {
     if (!currentRound) return;
 
-    const isSafeZone = currentRound === 'rules' || currentRound.includes('waiting') || currentRound === 'completed';
-    if (isSafeZone || competitionStatus !== 'active') return;
+    const isProctoredZone = currentRound === 'mcq' || currentRound === 'darkmark' || currentRound === 'rules' ;
+    if (!isProctoredZone || competitionStatus !== 'active') return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {

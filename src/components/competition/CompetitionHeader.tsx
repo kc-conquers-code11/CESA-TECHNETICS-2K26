@@ -83,10 +83,10 @@ export const CompetitionHeader = () => {
           </div>
           <div>
             <h1 className="font-display font-bold text-lg leading-none text-white tracking-wider">
-              STRANGER <span className="text-red-600">TECH</span>
+              TECH<span className="text-red-600">NETICS</span>
             </h1>
             <p className="text-[10px] text-zinc-400 font-mono tracking-widest uppercase">
-               Upside Down CodeArena
+               Hogwarts CodeArena
             </p>
           </div>
         </motion.div>
@@ -127,7 +127,7 @@ export const CompetitionHeader = () => {
                 variant="ghost" 
                 size="icon" 
                 className="text-zinc-400 hover:text-red-500 hover:bg-red-950/30"
-                title="Disconnect from Simulation"
+                title="Exit the Academy"
             >
                 <LogOut className="w-5 h-5" />
             </Button>

@@ -60,7 +60,7 @@ const LockedRules = () => {
             <div className="space-y-2">
                 <h3 className="text-2xl font-st font-bold text-white tracking-wide">RESTRICTED ACCESS</h3>
                 <p className="text-zinc-400 max-w-md mx-auto leading-relaxed">
-                    The competition protocols are classified. You must identify yourself to access the <span className="text-red-500 font-bold glow-text">Upside Down</span> rules.
+                    The competition protocols are classified. You must identify yourself to access the <span className="text-red-500 font-bold glow-text">Forbidden Forest</span> rules.
                 </p>
             </div>
             <button onClick={() => navigate('/login')} className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg tracking-wider transition-all shadow-lg hover:shadow-red-900/50">
@@ -77,7 +77,7 @@ const AboutContent = () => (
     <div className="text-center space-y-6">
         <div className="relative inline-block">
             <div className="absolute inset-0 bg-red-600/20 blur-[50px] rounded-full pointer-events-none" />
-            <StrangerTypewriter text="STRANGER TECH" className="text-5xl md:text-7xl" />
+            <StrangerTypewriter text="TECHNETICS" className="text-5xl md:text-7xl" />
         </div>
         
         <div className="flex flex-wrap items-center justify-center gap-3 text-zinc-400 font-mono text-sm md:text-base">
@@ -88,8 +88,8 @@ const AboutContent = () => (
 
         <div className="max-w-4xl mx-auto bg-zinc-900/40 border-l-4 border-red-600 p-6 rounded-r-xl backdrop-blur-sm text-left shadow-2xl">
             <p className="text-lg text-zinc-300 leading-relaxed font-light">
-                <strong className="text-white">Stranger Tech</strong> is a flagship event hosted by <span className="text-red-400">CESA CSI</span>. 
-                It combines technical challenges with creative and problem-solving contests, aiming to bridge technical skills with cultural experiences and provide a gateway to the professional tech industry.
+                <strong className="text-white">Technetics</strong> is a flagship event hosted by <span className="text-red-400">CESA CSI</span>. 
+                It combines technical challenges with wizarding tasks and creative problem-solving, aiming to bridge technical skills with magical experiences and provide a gateway to the professional tech industry.
             </p>
         </div>
     </div>
@@ -101,13 +101,13 @@ const AboutContent = () => (
         <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-xl hover:border-red-600/50 transition-all duration-300 group hover:shadow-[0_0_20px_rgba(220,38,38,0.1)]">
             <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-red-900/20 rounded-lg group-hover:bg-red-600 group-hover:text-black transition-colors text-red-500"><Video className="w-6 h-6" /></div>
-                <h3 className="text-2xl font-bold text-white group-hover:text-red-500 transition-colors font-st tracking-wide">Frame Rush</h3>
+                <h3 className="text-2xl font-bold text-white group-hover:text-red-500 transition-colors font-st tracking-wide">Daily Prophet Reel</h3>
             </div>
             <p className="text-red-400/80 text-sm mb-4 font-mono uppercase tracking-wider">Reel Making Competition</p>
             <ul className="space-y-2 text-zinc-300 text-sm list-none">
-                <li className="flex gap-2"><span className="text-red-600">›</span> An individual video storytelling challenge with a Stranger Things theme.</li>
-                <li className="flex gap-2"><span className="text-red-600">›</span> Participants shoot visuals and record live event footage, focusing on creative framing.</li>
-                <li className="flex gap-2"><span className="text-red-600">›</span> Reels are edited with attention to cuts, transitions, and sound sync.</li>
+                <li className="flex gap-2"><span className="text-red-600">›</span> An individual video storytelling challenge with a Harry Potter theme.</li>
+                <li className="flex gap-2"><span className="text-red-600">›</span> Participants shoot visuals and record live academy footage, focusing on creative framing.</li>
+                <li className="flex gap-2"><span className="text-red-600">›</span> Reels are edited with attention to cuts, transitions, and magical sync.</li>
                 <li className="flex gap-2"><span className="text-red-600">›</span> <strong>No AI allowed.</strong> Submission via Drive link on Day 2.</li>
             </ul>
         </div>
@@ -116,7 +116,7 @@ const AboutContent = () => (
         <div className="bg-zinc-900/60 border border-zinc-800 p-6 rounded-xl hover:border-blue-600/50 transition-all duration-300 group hover:shadow-[0_0_20px_rgba(37,99,235,0.1)]">
             <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-blue-900/20 rounded-lg group-hover:bg-blue-600 group-hover:text-black transition-colors text-blue-500"><BrainCircuit className="w-6 h-6" /></div>
-                <h3 className="text-2xl font-bold text-white group-hover:text-blue-500 transition-colors font-st tracking-wide">The Gatekeeper's Protocol</h3>
+                <h3 className="text-2xl font-bold text-white group-hover:text-blue-500 transition-colors font-st tracking-wide">The Order of Obscure code</h3>
             </div>
             <p className="text-blue-400/80 text-sm mb-4 font-mono uppercase tracking-wider">Technical Challenge (2-3 Members)</p>
             <ul className="space-y-2 text-zinc-300 text-sm list-none">

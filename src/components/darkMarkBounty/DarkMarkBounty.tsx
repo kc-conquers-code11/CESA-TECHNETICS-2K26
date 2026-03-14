@@ -12,7 +12,9 @@ import { GameScreen } from "./screens/GameScreen";
 import { LeaderboardScreen } from "./screens/LeaderboardScreen";
 import { AdminScreen } from "./screens/AdminScreen";
 import { useCompetitionStore } from "@/store/competitionStore";
+import { supabase } from "@/lib/supabaseClient";
 import "./styles/darkMarkBounty.css";
+import { useNavigate } from "react-router-dom";
 
 // import { useServerTimer } from "@/hooks/useServerTimer"; // Temporarily commented out as it's missing
 
@@ -20,6 +22,7 @@ const ROUND_ID = "4";
 
 export const DarkMarkBounty: React.FC = () => {
   const { teamName, email, userId } = useCompetitionStore();
+  const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("team");
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
@@ -29,11 +32,49 @@ export const DarkMarkBounty: React.FC = () => {
   const [codeError, setCodeError] = useState("");
 
   const { notification, showNotification } = useNotification();
+  
+  // Auto-initialize currentTeam from global CompetitionStore
+  useEffect(() => {
+    if (userId) {
+      const team: Team = {
+        id: userId,
+        name: teamName || "Test Team",
+        players: [email || "Participant"],
+        score: 0,
+        solved: [],
+        usedCodes: [],
+      };
+      
+      // Fetch existing score from Supabase if any
+      const fetchScore = async () => {
+        const { data, error } = await supabase
+          .from("darkmark_leaderboard")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
+        
+        if (data) {
+          team.score = data.score;
+          team.solved = data.solved_data || [];
+          team.usedCodes = team.solved.map((s: any) => s.code);
+        }
+
+        setTeams(prev => {
+          if (prev.find(t => t.id === userId)) return prev.map(t => t.id === userId ? team : t);
+          return [...prev, team];
+        });
+        setCurrentTeam(team);
+      };
+
+      fetchScore();
+    }
+  }, [teamName, email, userId]);
+
   // const { timerState, formattedTime } = useServerTimer(ROUND_ID);
   const timerState = { timerStatus: "running" }; // Mock
   const formattedTime = "00:00:00"; // Mock
 
-  const handleCodeSubmit = () => {
+  const handleCodeSubmit = async () => {
     if (timerState?.timerStatus !== "running") {
       setCodeError("The round is not active!");
       return;
@@ -52,16 +93,80 @@ export const DarkMarkBounty: React.FC = () => {
       return;
     }
 
-    const gameType = getRandomGame(envelope.difficulty);
-    const puzzle = getPuzzle(gameType, envelope.difficulty);
-    setActiveGame({ code, envelope, gameType, puzzle, startTime: Date.now() });
-    setCodeError("");
-    setCodeInput("");
-    setScreen("game");
+    // 1. Check Concurrency and Cooldown
+    try {
+      // Clean up expired attempts/failed ones
+      const now = new Date().toISOString();
+      
+      // Check for this user's cooldown on this code
+      const { data: cooldownData } = await supabase
+        .from("bounty_attempts")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("code", code)
+        .eq("status", "failed")
+        .gt("expires_at", now)
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cooldownData) {
+        const remaining = Math.ceil((new Date(cooldownData.expires_at).getTime() - Date.now()) / 1000);
+        setCodeError(`Cooldown active! Wait ${remaining}s to retry code ${code}.`);
+        return;
+      }
+
+      // Check current active users for this code
+      const { count } = await supabase
+        .from("bounty_attempts")
+        .select("*", { count: 'exact', head: true })
+        .eq("code", code)
+        .eq("status", "active")
+        .gt("expires_at", now);
+
+      if (count && count >= 2) {
+        setCodeError("Bounty busy! Only 2 teams can hunt this code at once.");
+        return;
+      }
+
+      // 2. Register Active Attempt
+      const { error: attemptError } = await supabase
+        .from("bounty_attempts")
+        .insert({
+          user_id: userId,
+          code: code,
+          status: "active",
+          expires_at: new Date(Date.now() + 130000).toISOString() // 2m 10s (buffer over 120s timeout)
+        });
+
+      if (attemptError) throw attemptError;
+
+      const gameType = getRandomGame(envelope.difficulty);
+      const puzzle = getPuzzle(gameType, envelope.difficulty);
+      setActiveGame({ code, envelope, gameType, puzzle, startTime: Date.now() });
+      setCodeError("");
+      setCodeInput("");
+      setScreen("game");
+    } catch (err) {
+      console.error("Bounty safety check error:", err);
+      setCodeError("Safety check failed. Try again.");
+    }
   };
 
-  const handleGameComplete = (won: boolean, bonusPoints = 0) => {
-    if (!won || !activeGame || !currentTeam) {
+  const handleGameComplete = async (won: boolean, bonusPoints = 0) => {
+    if (!won || !activeGame || !currentTeam || !userId) {
+      // Mark attempt as failed if lost/exited
+      if (activeGame && userId) {
+        await supabase
+          .from("bounty_attempts")
+          .update({ 
+            status: "failed", 
+            expires_at: new Date(Date.now() + 120000).toISOString() 
+          })
+          .eq("user_id", userId)
+          .eq("code", activeGame.code)
+          .eq("status", "active");
+      }
       setScreen("team");
       setActiveGame(null);
       return;
@@ -73,21 +178,53 @@ export const DarkMarkBounty: React.FC = () => {
     const speedBonus = elapsed < 30 ? 20 : elapsed < 60 ? 10 : 0;
     const finalPoints = total + speedBonus;
 
+    const newSolved = [
+      ...currentTeam.solved,
+      {
+        code: activeGame.code,
+        game: activeGame.gameType,
+        points: finalPoints,
+      },
+    ];
+    const newScore = currentTeam.score + finalPoints;
+    const newUsedCodes = [...currentTeam.usedCodes, activeGame.code];
+
+    // Persist Result to Leaderboard
+    const { error: lbError } = await supabase
+      .from("darkmark_leaderboard")
+      .upsert({
+        user_id: userId,
+        team_name: currentTeam.name,
+        score: newScore,
+        solved_count: newSolved.length,
+        solved_data: newSolved,
+        updated_at: new Date().toISOString(),
+      });
+
+    // Update Attempt Status
+    await supabase
+      .from("bounty_attempts")
+      .update({ 
+        status: won ? "solved" : "failed",
+        expires_at: won ? new Date().toISOString() : new Date(Date.now() + 120000).toISOString() // 2 min cooldown if failed
+      })
+      .eq("user_id", userId)
+      .eq("code", activeGame.code)
+      .eq("status", "active");
+
+    if (lbError) {
+      console.error("Score persist error:", lbError);
+      showNotification("Failed to save score online!", "warn");
+    }
+
     setTeams((prev) =>
       prev.map((t) => {
         if (t.id !== currentTeam.id) return t;
         return {
           ...t,
-          score: t.score + finalPoints,
-          solved: [
-            ...t.solved,
-            {
-              code: activeGame.code,
-              game: activeGame.gameType,
-              points: finalPoints,
-            },
-          ],
-          usedCodes: [...t.usedCodes, activeGame.code],
+          score: newScore,
+          solved: newSolved,
+          usedCodes: newUsedCodes,
         };
       }),
     );
@@ -96,8 +233,9 @@ export const DarkMarkBounty: React.FC = () => {
       prev
         ? {
             ...prev,
-            score: prev.score + finalPoints,
-            usedCodes: [...prev.usedCodes, activeGame.code],
+            score: newScore,
+            solved: newSolved,
+            usedCodes: newUsedCodes,
           }
         : null,
     );
@@ -150,9 +288,10 @@ export const DarkMarkBounty: React.FC = () => {
               codeError={codeError}
               onSubmitCode={handleCodeSubmit}
               onLeaderboard={() => setScreen("leaderboard")}
-              onLogout={() => {
+              onLogout={async () => {
                 // Logout now just takes you back to the leaderboard or resets view
-                setScreen("leaderboard");
+                await supabase.auth.signOut();
+                navigate('/login');
               }}
             />
           )}
@@ -163,12 +302,11 @@ export const DarkMarkBounty: React.FC = () => {
 
           {screen === "leaderboard" && (
             <LeaderboardScreen
-              teams={sortedTeams}
-              onBack={() => setScreen(currentTeam ? "team" : "landing")}
+              onBack={() => setScreen("team")}
             />
           )}
 
-          {screen === "admin" && (
+          {/* {screen === "admin" && (
             <AdminScreen
               teams={sortedTeams}
               codes={ENVELOPE_CODES}
@@ -178,7 +316,7 @@ export const DarkMarkBounty: React.FC = () => {
                 showNotification("All scores reset", "warn");
               }}
             />
-          )}
+          )} */}
       </div>
     </div>
   );

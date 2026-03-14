@@ -11,20 +11,21 @@ import {
     Activity,
     Code
 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
 import { CompetitionTimer } from './CompetitionTimer';
 import { toast } from 'sonner';
 
 const GithubRound = () => {
-    useAntiCheat();
+    // useAntiCheat(); // Anti-cheat disabled for this round
     const { completeRound, email, userId } = useCompetitionStore();
     
     const [submissionLink, setSubmissionLink] = useState(() => {
         return localStorage.getItem('github_submission_link') || '';
     });
 
-    // --- STRANGER TECH LOGIC: PERSISTENT TIMER ---
+    // --- ACADEMY LOGIC: PERSISTENT TIMER ---
     const [roundDuration, setRoundDuration] = useState(60 * 60);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,10 +42,8 @@ const GithubRound = () => {
 
         setError(null);
 
-        // --- GITHUB VALIDATION ---
-        const githubRegex = /^(https?:\/\/)?(www\.)?github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9._-]+(\/)?$/;
-        if (!githubRegex.test(submissionLink.trim())) {
-            setError("Please enter a valid GitHub repository URL (e.g., https://github.com/user/repo)");
+        if (!submissionLink) {
+            setError("Please enter your deployment link");
             return;
         }
 
@@ -52,21 +51,38 @@ const GithubRound = () => {
         const toastId = toast.loading("Submitting GitHub Round Link...");
 
         try {
-            // Simulating API call or DB update if needed
-            // For now, we follow the original logic of navigating, which we replace with completeRound
+            // 📝 Log to github_submissions table (As requested by user)
+            const { error: dbError } = await supabase
+                .from('github_submissions')
+                .insert([{
+                    team_name: email, 
+                    deploy_link: submissionLink.trim(),
+                    github_end_time: new Date().toISOString(),
+                    user_id: userId // Assuming userId is available from useCompetitionStore
+                }]);
+
+            if (dbError) {
+                console.error("Submission Error:", dbError);
+                toast.error("Failed to commit to the magical scrolls.", { id: toastId });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // Clear local storage items after successful submission
             localStorage.removeItem('github_end_time');
             localStorage.removeItem('github_submission_link');
             localStorage.removeItem('github_switches');
             localStorage.removeItem('github_frozen');
             
             await completeRound('flowchart');
-            toast.success("Solution Submitted", { id: toastId });
+            toast.success("Ancient Runes manifested successfully!", { id: toastId });
         } catch (err) {
-            toast.error("Failed to submit", { id: toastId });
+            console.error("Critical Error:", err);
+            toast.error("Manifestation failed. The magic is unstable.", { id: toastId });
         } finally {
             setIsSubmitting(false);
         }
-    }, [isSubmitting, submissionLink, completeRound]);
+    }, [isSubmitting, submissionLink, completeRound, email, userId]); // Added email and userId to dependencies
 
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden">
@@ -75,42 +91,33 @@ const GithubRound = () => {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
 
                 <h2 className="text-4xl md:text-5xl font-wizard tracking-widest text-[#FFD700] mb-6">
-                    The Cursed Repository
+                    The Enchanted Link
                 </h2>
 
                 <p className="text-gray-400 font-sans leading-relaxed mb-10 text-lg max-w-2xl mx-auto">
-                    The Ministry's archives have been tainted by dark magic. Clone the corrupted scrolls below, mend the broken logic, and manifest your solution in your own digital vault.
+                    The Ancient Runes are ready for manifestation. Deploy your solution to the magical cloud and submit the enchanted portal link below.
                 </p>
 
                 <div className="bg-black/40 border border-[#d4af37]/20 rounded-2xl p-6 mb-12 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#d4af37]/40 transition-all">
                     <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-xl bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37]">
-                            <Github size={32} />
+                            <ExternalLink size={32} />
                         </div>
                         <div className="text-left">
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Source Repository</p>
-                            <p className="text-white font-code text-sm break-all tracking-tight">github.com/kc-conquers-code11/CESA-TECHNETICS-2K26</p>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Magical Deployment</p>
+                            <p className="text-white font-code text-sm break-all tracking-tight">Enter your live deployment URL</p>
                         </div>
                     </div>
-                    <a
-                        href="https://github.com/kc-conquers-code11/CESA-TECHNETICS-2K26.git"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-6 py-3 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] font-wizard hover:bg-[#d4af37]/20 transition-all flex items-center gap-2 shrink-0"
-                    >
-                        <span>Clone Repository</span>
-                        <ExternalLink size={16} />
-                    </a>
                 </div>
 
                 <div className="space-y-5 text-left max-w-2xl mx-auto w-full">
-                    <label className="text-xs font-black text-[#d4af37]/70 uppercase tracking-[0.2em] ml-2"> Manifest Your Fix (Solution Link)</label>
+                    <label className="text-xs font-black text-[#d4af37]/70 uppercase tracking-[0.2em] ml-2"> Manifest Your Portal (Deployment Link)</label>
                     <div className="relative group">
                         <input
                             type="text"
                             value={submissionLink}
                             onChange={(e) => setSubmissionLink(e.target.value)}
-                            placeholder="Paste your fixed repository URL here..."
+                            placeholder="Paste your live deployment URL here..."
                             className="w-full bg-black/60 border-2 border-[#d4af37]/20 rounded-2xl px-6 py-5 text-white placeholder:text-gray-600 focus:border-[#d4af37]/60 focus:outline-none transition-all shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] group-hover:border-[#d4af37]/30"
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d4af37]/30 group-hover:text-[#d4af37]/60 transition-colors">
@@ -126,7 +133,7 @@ const GithubRound = () => {
                             {error}
                         </motion.p>
                     )}
-                    <p className="text-[10px] text-gray-500 italic ml-2">Ensure your repository is PUBLIC so the Ministry can verify your scrolls.</p>
+                    <p className="text-[10px] text-gray-500 italic ml-2">Ensure your deployment is accessible so the Professors can verify your spells.</p>
                 </div>
 
                 <div className="mt-14 flex justify-center">

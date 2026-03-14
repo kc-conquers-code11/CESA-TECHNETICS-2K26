@@ -30,8 +30,18 @@ const App = () => (
           <Route path="/dark-mark-login" element={<DarkMarkLogin />} />
           <Route path="/signup" element={<Signup />} />
           
-          {/*  HOME PAGE IS NOW PUBLIC (Animation sabko dikhegi) */}
-          <Route path="/" element={<Index />} />
+          {/*  HOME PAGE IS NOW REDIRECTED TO LOGIN */}
+          <Route path="/" element={<Login />} />
+
+          {/* 🔒 PROTECTED USER ROUTES */}
+          <Route 
+            path="/rules" 
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } 
+          />
 
           {/* 🔒 ADMIN ROUTE (Sirf Admin ke liye protected) */}
           <Route 

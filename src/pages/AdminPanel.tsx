@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { Leaderboard as LeaderboardTab } from '../components/competition/LeaderboardTab'; 
+import { LeaderboardScreen } from '../components/darkMarkBounty/screens/LeaderboardScreen';
 import ReactFlow, {
     Background,
     Controls,
@@ -257,7 +258,7 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
 // --- MAIN COMPONENT ---
 export default function AdminPanel() {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'monitor' | 'controls' | 'questions' | 'leaderboard' | 'settings'>('monitor');
+    const [activeTab, setActiveTab] = useState<'monitor' | 'controls' | 'questions' | 'leaderboard' | 'settings' | 'darkmark'>('monitor');
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [questions, setQuestions] = useState<any[]>([]);
     const [flowchartProblems, setFlowchartProblems] = useState<any[]>([]);
@@ -569,9 +570,9 @@ export default function AdminPanel() {
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         <div className="flex gap-2 bg-black/50 p-1.5 rounded-xl border border-zinc-800">
-                            {['monitor', 'controls', 'questions', 'leaderboard', 'settings'].map((tab) => (
+                            {['monitor', 'controls', 'questions', 'leaderboard', 'settings', 'darkmark'].map((tab) => (
                                 <button key={tab} onClick={() => setActiveTab(tab as any)} className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all capitalize tracking-wide", activeTab === tab ? "bg-red-700 text-white shadow-lg" : "text-zinc-400 hover:text-white hover:bg-zinc-800")}>
-                                    {tab}
+                                    {tab === 'darkmark' ? 'Dark Mark LB' : tab}
                                 </button>
                             ))}
                         </div>
@@ -836,6 +837,13 @@ export default function AdminPanel() {
                 {/* ======================= LEADERBOARD TAB (UPDATED) ======================= */}
                 {activeTab === 'leaderboard' && (
                     <LeaderboardTab />
+                )}
+
+                {/* DARK MARK LB TAB */}
+                {activeTab === 'darkmark' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800">
+                    <LeaderboardScreen onBack={() => setActiveTab('monitor')} />
+                  </div>
                 )}
 
                 {/* --- MONITOR TAB INSPECTION MODAL --- */}

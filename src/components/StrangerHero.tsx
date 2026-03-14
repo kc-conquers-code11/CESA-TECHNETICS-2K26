@@ -121,7 +121,7 @@ export default function StrangerHero({ onComplete }: StrangerHeroProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)]" />
       </div>
 
-      {/* PARTICLE SYSTEM (Upside Down Spores) */}
+      {/* PARTICLE SYSTEM (Magical Dust) */}
       <div ref={particlesRef} className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
           {particles.map((p, i) => (
               <div 

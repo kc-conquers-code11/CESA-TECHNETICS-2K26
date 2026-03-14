@@ -59,8 +59,8 @@ export const CompletionPage = () => {
             </h1>
             
             <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-8 leading-relaxed">
-                You have successfully navigated the Upside Down logic gates and survived the algorithmic challenges. 
-                Your submission has been transmitted to Hawkins Lab for evaluation.
+                You have successfully navigated the Forbidden Forest logic gates and survived the magical challenges. 
+                Your submission has been transmitted to the Academy for evaluation.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -85,7 +85,7 @@ export const CompletionPage = () => {
                 size="lg"
                 className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-6 text-lg shadow-lg shadow-red-900/20"
             >
-                <LogOut className="w-5 h-5 mr-2" /> DISCONNECT FROM SIMULATION
+                <LogOut className="w-5 h-5 mr-2" /> EXIT THE ACADEMY SESSION
             </Button>
         </motion.div>
 

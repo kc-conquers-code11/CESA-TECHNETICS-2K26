@@ -131,7 +131,7 @@ export const RulesPage = () => {
                 {/* HEADER */}
                 <div className="text-center space-y-4 mb-10 mt-2">
                     <h1 className="text-4xl md:text-5xl font-bold font-display text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.5)] tracking-wide">
-                        PROTOCOL VERIFICATION
+                        ACADEMY VERIFICATION
                     </h1>
                     <p className="text-zinc-400 max-w-2xl mx-auto font-medium">
                         Strict adherence to the following protocols is mandatory. <span className="text-red-400">Violations are monitored.</span>
@@ -141,7 +141,7 @@ export const RulesPage = () => {
                 {/* RULES SECTIONS */}
                 <div className="space-y-5">
                     <RuleSection 
-                        title="Round 1: Aptitude (MCQ)" 
+                        title="Round 1: Arithmancy (MCQ)" 
                         icon={<ListChecks className="w-5 h-5 text-blue-400" />}
                         rules={groupedRules.mcq}
                         color="blue"
@@ -149,14 +149,14 @@ export const RulesPage = () => {
                     />
 
                     <RuleSection 
-                        title="Round 2: Logic Design (Flowchart)" 
+                        title="Round 2: Ancient Runes (Flowchart)" 
                         icon={<Workflow className="w-5 h-5 text-yellow-400" />}
                         rules={groupedRules.flowchart}
                         color="yellow"
                     />
 
                     <RuleSection 
-                        title="Round 3: Implementation (Coding)" 
+                        title="Round 3: Dark Code Defense (Coding)" 
                         icon={<Code className="w-5 h-5 text-purple-400" />}
                         rules={groupedRules.coding}
                         color="purple"
@@ -169,7 +169,7 @@ export const RulesPage = () => {
                         <AlertTriangle className="text-red-500 w-6 h-6 animate-pulse" />
                     </div>
                     <div>
-                        <h4 className="text-red-400 font-bold mb-1 tracking-wide">STRICT PROCTORING ENABLED</h4>
+                        <h4 className="text-red-400 font-bold mb-1 tracking-wide">STRICT PROCTORING ACTIVE</h4>
                         <p className="text-red-200/70 text-sm leading-relaxed">
                             Your Full-Screen Status, Tab Switches, and Mouse Activity are being logged. 
                             <strong className="block mt-1 text-red-100">Any attempt to minimize the browser or switch tabs will result in instant disqualification.</strong>

@@ -27,7 +27,7 @@ export default function Login() {
       if (res.isAdmin) {
         navigate("/admin");
       } else {
-        navigate("/"); // Rules Page / Home
+        navigate("/rules"); // Rules Page / Home
       }
 
     } catch (err: any) {
@@ -46,8 +46,8 @@ export default function Login() {
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           <h1 className="text-4xl font-bold tracking-widest font-display z-10">CESA CodeArena</h1>
           <p className="mt-4 text-sm text-red-200 z-10">
-            Enter the Upside Down.<br />
-            Prove your coding skills.
+            Enter the Forbidden Forest.<br />
+            Prove your magical skills.
           </p>
         </div>
 

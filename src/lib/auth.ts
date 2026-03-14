@@ -46,8 +46,7 @@ export const signupApi = async (formData: any) => {
     division: formData.division,
     branch: formData.branch,
     is_dark_mark: formData.isDarkMark || false,
-    team_name: formData.teamName || null, // ADDED: Team Name for Dark Mark
-    // phone_number: formData.phoneNumber || null, // ADDED: Phone Number
+    team_name: formData.teamName || null, 
     status: "active",
     current_round_slug: "rules", // Default start point
   });

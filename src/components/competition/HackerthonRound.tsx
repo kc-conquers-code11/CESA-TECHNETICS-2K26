@@ -15,13 +15,13 @@ import { CompetitionTimer } from './CompetitionTimer';
 import { toast } from 'sonner';
 
 const HackerthonRound = () => {
-    useAntiCheat();
+    // useAntiCheat(); // Anti-cheat disabled for this round
     const { completeRound } = useCompetitionStore();
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
 
-    // --- STRANGER TECH LOGIC: PERSISTENT TIMER ---
+    // --- ACADEMY LOGIC: PERSISTENT TIMER ---
     const [roundDuration, setRoundDuration] = useState(60 * 60);
 
     const problems = [
@@ -205,9 +205,9 @@ const HackerthonRound = () => {
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
                             <span>Proctored</span>
-                            <div className="flex items-center gap-1 text-green-500">
+                            <div className="flex items-center gap-1 text-gray-500">
                                 <MonitorCheck size={12} />
-                                <span>Active</span>
+                                <span>Inactive</span>
                             </div>
                         </div>
                     </div>
