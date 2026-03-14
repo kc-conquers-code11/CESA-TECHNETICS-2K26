@@ -19,6 +19,7 @@ import GamesPage from "./pages/GamesPage";
 import AptitudeRound from "./pages/AptitudeRound";
 import GithubRound from "./pages/GithubRound";
 import HackathonSelection from "./pages/HackathonSelection";
+import HackathonSubmission from "./pages/HackathonSubmission";
 import WaitingListPage from "./pages/WaitingListPage";
 import Rules from "./pages/Rules";
 
@@ -33,44 +34,45 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          
+
           {/*  PUBLIC ROUTES */}
           <Route path="/login" element={<Login />} />
           <Route path="/dark-mark-login" element={<DarkMarkLogin />} />
           <Route path="/signup" element={<Signup />} />
-          
+
           {/* 🧙‍♂️ TECHNETICS ROUTES */}
           <Route path="/" element={<TechneticsLayout />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/aptitude-round" element={<AptitudeRound />} />
           <Route path="/github-round" element={<GithubRound />} />
           <Route path="/hackathon-selection" element={<HackathonSelection />} />
+          <Route path="/hackathon-submission" element={<HackathonSubmission />} />
           <Route path="/waiting-list" element={<WaitingListPage />} />
           <Route path="/rules-technetics" element={<Rules />} />
 
           {/* 🔒 PROTECTED USER ROUTES */}
-          <Route 
-            path="/rules" 
+          <Route
+            path="/rules"
             element={
               <ProtectedRoute>
                 {/* <Rules /> */}
                 <Index />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* 🔒 ADMIN ROUTE (Sirf Admin ke liye protected) */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminPanel />
               </ProtectedRoute>
-            } 
+            }
           />
 
           <Route path="*" element={<NotFound />} />
-          
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

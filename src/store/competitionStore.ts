@@ -20,6 +20,7 @@ interface CompetitionState {
   isDarkMark: boolean;
   isObscure: boolean;
   teamName: string | null;
+  selectedPSId: number | null;
   // phoneNumber: string | null;
 
   // Actions
@@ -37,6 +38,7 @@ interface CompetitionState {
   unfreezeCompetition: () => void;
   disqualifyUser: () => Promise<void>;
   disqualify: () => Promise<void>;
+  setPSId: (id: number) => Promise<void>;
   resetCompetition: () => void;
 }
 
@@ -62,6 +64,7 @@ const initialState = {
   isDarkMark: false,
   isObscure: false,
   teamName: null,
+  selectedPSId: null,
   // phoneNumber: null,
 };
 
@@ -76,23 +79,23 @@ export const useCompetitionStore = create<CompetitionState>()(
       initializeUser: async (userId, email) => {
         set({ userId, email });
         const { data } = await supabase.from('exam_sessions').select('*').eq('user_id', userId).single();
-        
+
         if (data) {
           const currentRoundSlug = data.current_round_slug as Round;
           const currentIndex = ROUND_ORDER.indexOf(currentRoundSlug);
-          
+
           const newRoundStatus = { ...initialState.roundStatus };
-          
+
           // Mark all rounds before current as completed
           for (let i = 0; i < currentIndex; i++) {
             newRoundStatus[ROUND_ORDER[i]] = 'completed';
           }
-          
+
           // Mark current round as active
           if (currentIndex !== -1) {
             newRoundStatus[currentRoundSlug] = 'active';
           }
-          
+
           set({
             competitionStatus: data.status,
             currentRound: currentRoundSlug,
@@ -101,45 +104,47 @@ export const useCompetitionStore = create<CompetitionState>()(
             isDarkMark: data.is_dark_mark || false,
             isObscure: data.is_obscure || false,
             teamName: data.team_name || null,
+            selectedPSId: data.selected_ps_id || null,
             // phoneNumber: data.phone_number || null,
           });
         } else {
           // Create session if not exists
-          await supabase.from('exam_sessions').insert({ 
-            user_id: userId, 
-            email: email, 
-            status: 'active', 
-            current_round_slug: 'rules' 
+          await supabase.from('exam_sessions').insert({
+            user_id: userId,
+            email: email,
+            status: 'active',
+            current_round_slug: 'rules'
           });
         }
       },
 
       syncSession: (data) => {
         console.log("⚡ Session Sync:", data);
-        
+
         const currentRoundSlug = data.current_round_slug as Round;
         const currentIndex = ROUND_ORDER.indexOf(currentRoundSlug);
-        
+
         const newRoundStatus = { ...initialState.roundStatus };
-        
+
         // Mark all rounds before current as completed
         for (let i = 0; i < currentIndex; i++) {
           newRoundStatus[ROUND_ORDER[i]] = 'completed';
         }
-        
+
         // Mark current round as active
         if (currentIndex !== -1) {
           newRoundStatus[currentRoundSlug] = 'active';
         }
-        
-        set({ 
-          competitionStatus: data.status, 
-          currentRound: currentRoundSlug, 
+
+        set({
+          competitionStatus: data.status,
+          currentRound: currentRoundSlug,
           tabSwitchCount: data.tab_switches,
           roundStatus: newRoundStatus,
           isDarkMark: data.is_dark_mark || false,
           isObscure: data.is_obscure || false,
           teamName: data.team_name || null,
+          selectedPSId: data.selected_ps_id || null,
           // phoneNumber: data.phone_number || null,
         });
       },
@@ -148,7 +153,7 @@ export const useCompetitionStore = create<CompetitionState>()(
         const { userId } = get();
         // Move to initial Waiting Room
         const nextRound = 'waiting';
-        
+
         const newRoundStatus = { ...get().roundStatus };
         newRoundStatus.rules = 'completed';
         newRoundStatus.waiting = 'active';
@@ -185,7 +190,7 @@ export const useCompetitionStore = create<CompetitionState>()(
       completeRound: async (completedRound) => {
         const { userId, roundStatus } = get();
         const newRoundStatus = { ...roundStatus };
-        
+
         let nextRound: Round = 'completed';
 
         //  LOGIC CHANGED: Move to Waiting Room instead of next round
@@ -193,12 +198,12 @@ export const useCompetitionStore = create<CompetitionState>()(
           nextRound = 'waiting_r2'; // Wait for Round 2
           newRoundStatus.mcq = 'completed';
           newRoundStatus.waiting_r2 = 'active';
-        } 
+        }
         else if (completedRound === 'flowchart') {
           nextRound = 'waiting_r3'; // Wait for Round 3
           newRoundStatus.flowchart = 'completed';
           newRoundStatus.waiting_r3 = 'active';
-        } 
+        }
         else if (completedRound === 'coding') {
           nextRound = 'completed'; // Finish
           newRoundStatus.coding = 'completed';
@@ -206,7 +211,7 @@ export const useCompetitionStore = create<CompetitionState>()(
         }
 
         set({ currentRound: nextRound, roundStatus: newRoundStatus });
-        
+
         // Update DB so Admin sees user is waiting
         if (userId) await supabase.from('exam_sessions').update({ current_round_slug: nextRound }).eq('user_id', userId);
       },
@@ -239,6 +244,15 @@ export const useCompetitionStore = create<CompetitionState>()(
       },
 
       disqualify: async () => get().disqualifyUser(),
+
+      setPSId: async (id) => {
+        const { userId } = get();
+        set({ selectedPSId: id });
+        if (userId) {
+          await supabase.from('exam_sessions').update({ selected_ps_id: id }).eq('user_id', userId);
+        }
+      },
+
       resetCompetition: () => set(initialState),
     }),
     { name: 'cesa-storage' }
