@@ -566,7 +566,7 @@ export default function AdminPanel() {
                         <h1 className="text-3xl font-display font-bold text-red-600 tracking-wider flex items-center gap-3">
                             <Shield className="w-8 h-8" /> ADMIN COMMAND
                         </h1>
-                        <p className="text-zinc-500 text-sm mt-1">CESA CodeArena • Supervisor Terminal</p>
+                        <p className="text-zinc-500 text-sm mt-1">CESA CodeArena | Technetics 2K26 • Supervisor Terminal</p>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         <div className="flex gap-2 bg-black/50 p-1.5 rounded-xl border border-zinc-800">

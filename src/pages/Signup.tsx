@@ -43,7 +43,7 @@ export default function Signup() {
 
     // Simulate a brief magic reveal
     setTimeout(() => {
-      if (inviteCode === "TECHNETICS_26") {
+      if (inviteCode.trim().toUpperCase() === "TECHNETICS_26") {
         setIsVerified(true);
       } else {
         alert("The seal remains closed. Invalid Invitation Code.");
@@ -153,7 +153,7 @@ export default function Signup() {
                       type="text"
                       placeholder="Enter Invitation Script"
                       value={inviteCode}
-                      onChange={(e) => setInviteCode(e.target.value)}
+                      onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                       required
                       className="w-full bg-[#1a0f08]/5 border-b-2 border-[#1a0f08]/30 focus:border-[#8b6e2e] py-3 px-2 text-[#1a0f08] placeholder:text-[#1a0f08]/30 outline-none transition-all font-crimson text-xl text-center tracking-widest uppercase"
                     />
