@@ -393,13 +393,13 @@ export const RulesPage = () => {
           flowchart: [
             {
               rule_text:
-                "Participants must draw a flowchart for the given problem.",
+                "Participants must debug given code under the time limit.",
             },
           ],
           coding: [
             {
               rule_text:
-                "Participants will be given two (2) coding problems to solve.",
+                "Participants will be given four (4) problem statements to work.",
             },
           ],
         });
@@ -566,13 +566,13 @@ export const RulesPage = () => {
                 defaultOpen
               />
               <RuleSection
-                title="Round II — Logic Design (Flowchart)"
+                title="Round II — Bug Quest (DEBUGGING)"
                 icon={<Workflow className="w-5 h-5" />}
                 rules={groupedRules.flowchart}
                 color="amber"
               />
               <RuleSection
-                title="Round III — Implementation (Coding)"
+                title="Round III — Obscure Codes (HACKERTHON)"
                 icon={<Code className="w-5 h-5" />}
                 rules={groupedRules.coding}
                 color="red"
