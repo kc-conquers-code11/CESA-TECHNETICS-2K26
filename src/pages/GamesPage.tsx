@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { loginApi } from '../lib/auth';
 import { useCompetitionStore } from '@/store/competitionStore';
@@ -266,6 +266,14 @@ const GamesPage = () => {
                         <span>{loadingIdx === idx ? "Verifying..." : "Enter"}</span>
                         <div className="absolute inset-0 opacity-0 group-hover/btn:opacity-10 transition-opacity bg-white/20 blur-md rounded" />
                       </motion.button>
+                      <div className="text-center">
+                        <Link 
+                          to="/signup" 
+                          className="font-crimson italic text-[#3d2618]/60 hover:text-[#8b6e2e] transition-colors text-sm md:text-base border-b border-[#3d2618]/10 hover:border-[#8b6e2e]"
+                        >
+                          New to the Realm? Register Your Intent
+                        </Link>
+                      </div>
                     </div>
                   </form>
                 </div>
