@@ -9,8 +9,11 @@ import {
     ExternalLink,
     Send,
     Activity,
-    Code
+    Code,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { useAntiCheat } from '@/hooks/useAntiCheat';
@@ -43,6 +46,7 @@ const GithubRound = () => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeResource, setActiveResource] = useState(0); // 0: Vercel, 1: GitHub
 
     // --- PERSISTENCE EFFECT ---
     useEffect(() => {
@@ -125,34 +129,111 @@ const GithubRound = () => {
                     The Ancient Runes are ready for manifestation. Deploy your solution to the magical cloud and submit the enchanted portal link below.
                 </p>
 
-                <div className="bg-black/60 border border-[#d4af37]/30 rounded-2xl p-8 mb-12 flex flex-col md:flex-row items-center justify-between gap-8 hover:border-[#d4af37]/60 transition-all shadow-2xl relative group overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 to-transparent pointer-events-none" />
-                    <div className="flex items-center gap-6 relative z-10">
-                        <a 
-                            href="https://technetics-main.vercel.app/" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="w-16 h-16 rounded-2xl bg-[#d4af37]/15 flex items-center justify-center text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/25 hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.1)] group/ext"
+                <div className="relative group mb-10">
+                    <div className="absolute inset-y-0 left-[-22px] flex items-center z-50 pointer-events-none">
+                        <button 
+                            onClick={() => setActiveResource(prev => (prev === 0 ? 1 : 0))}
+                            className="p-2 rounded-full bg-black/80 border border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/20 hover:scale-110 transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)] opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 pointer-events-auto"
                         >
-                            <ExternalLink size={36} className="group-hover/ext:rotate-12 transition-transform" />
-                        </a>
-                        <div className="text-left">
-                            <p className="text-xs font-harry tracking-[0.2em] text-[#d4af37] mb-2 uppercase opacity-80">Reference Scroll</p>
-                            <h3 className="text-xl md:text-2xl font-wizard text-white tracking-widest mb-1">Requirement UI Preview</h3>
-                            <a 
-                                href="https://technetics-main.vercel.app/" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-sm font-code text-gray-400 hover:text-[#d4af37] transition-colors flex items-center gap-2"
-                            >
-                                technetics-main.vercel.app <Activity size={12} className="text-green-500 animate-pulse" />
-                            </a>
-                        </div>
+                            <ChevronLeft size={28} />
+                        </button>
                     </div>
-                    <div className="hidden md:block h-12 w-px bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent mx-4" />
-                    <div className="text-right hidden md:block">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Manifestation Target</p>
-                        <p className="text-[#d4af37] font-code text-xs">Vercel Cloud • SSL Secured</p>
+
+                    <div className="absolute inset-y-0 right-[-22px] flex items-center z-50 pointer-events-none">
+                        <button 
+                            onClick={() => setActiveResource(prev => (prev === 0 ? 1 : 0))}
+                            className="p-2 rounded-full bg-black/80 border border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/20 hover:scale-110 transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)] opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 pointer-events-auto"
+                        >
+                            <ChevronRight size={28} />
+                        </button>
+                    </div>
+
+                    <div className="bg-black/60 border border-[#d4af37]/30 rounded-2xl p-8 hover:border-[#d4af37]/60 transition-all shadow-2xl relative overflow-hidden">
+                        {/* Background Gradient - Fixed */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 to-transparent pointer-events-none" />
+
+                        <div className="relative z-10">
+                            <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeResource}
+                                initial={{ x: -30, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: 30, opacity: 0 }}
+                                transition={{ 
+                                    duration: 0.5, 
+                                    ease: [0.16, 1, 0.3, 1] // Super smooth cubic-bezier easeOut
+                                }}
+                            >
+                                {activeResource === 0 ? (
+                                    /* ROW 1: Deployment / Requirement UI */
+                                    <div className="flex flex-col md:flex-row items-center justify-between w-full gap-6 min-h-[80px]">
+                                        <div className="flex items-center gap-6 w-full md:w-auto">
+                                            <a 
+                                                href="https://technetics-codebug.vercel.app/" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="w-16 h-16 rounded-2xl bg-[#d4af37]/15 flex items-center justify-center text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/25 hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.1)] group/ext shrink-0"
+                                            >
+                                                <ExternalLink size={36} className="group-hover/ext:rotate-12 transition-transform" />
+                                            </a>
+                                            <div className="text-left text-white">
+                                                <p className="text-xs font-harry tracking-[0.2em] text-[#d4af37] mb-2 uppercase opacity-80">Reference Scroll</p>
+                                                <h3 className="text-xl md:text-2xl font-wizard tracking-widest mb-1">Requirement UI Preview</h3>
+                                                <a 
+                                                    href="https://technetics-codebug.vercel.app" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm font-code text-gray-400 hover:text-[#d4af37] transition-colors flex items-center gap-2 break-all"
+                                                >
+                                                    technetics-codebug.vercel.app <Activity size={12} className="text-green-500 animate-pulse shrink-0" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="hidden md:block h-12 w-px bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent mx-4 shrink-0" />
+                                        
+                                        <div className="text-right hidden md:block shrink-0">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Manifestation Target</p>
+                                            <p className="text-[#d4af37] font-code text-xs">Vercel Cloud • SSL Secured</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* ROW 2: GitHub Repository */
+                                    <div className="flex flex-col md:flex-row items-center justify-between w-full gap-6 min-h-[80px]">
+                                        <div className="flex items-center gap-6 w-full md:w-auto">
+                                            <a 
+                                                href="https://github.com/krrishmahar/Technetics_GITHUB_SYNC" 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="w-16 h-16 rounded-2xl bg-[#d4af37]/15 flex items-center justify-center text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/25 hover:scale-105 transition-all shadow-[0_0_20px_rgba(212,175,55,0.1)] group/ext shrink-0"
+                                            >
+                                                <Github size={36} className="group-hover/ext:rotate-12 transition-transform" />
+                                            </a>
+                                            <div className="text-left text-white">
+                                                <p className="text-xs font-harry tracking-[0.2em] text-[#d4af37] mb-2 uppercase opacity-80">Bugged Repository</p>
+                                                <h3 className="text-xl md:text-2xl font-wizard tracking-widest mb-1">Source Code Scroll</h3>
+                                                <a 
+                                                    href="https://github.com/krrishmahar/Technetics_GITHUB_SYNC" 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm font-code text-gray-400 hover:text-[#d4af37] transition-colors flex items-center gap-2 break-all"
+                                                >
+                                                    github.com/krrishmahar/Technetics_GITHUB_SYNC <Activity size={12} className="text-green-500 animate-pulse shrink-0" />
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="hidden md:block h-12 w-px bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent mx-4 shrink-0" />
+                                        
+                                        <div className="text-right hidden md:block shrink-0">
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Manifestation Source</p>
+                                            <p className="text-[#d4af37] font-code text-xs">Clone this bugged react repo to start</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                        </div>
                     </div>
                 </div>
 
@@ -216,7 +297,7 @@ const GithubRound = () => {
                     </div>
                 </div>
 
-                <div className="mt-14 flex justify-center">
+                <div className="mt-9 flex justify-center">
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || !submissionLink}
