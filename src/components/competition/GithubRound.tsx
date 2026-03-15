@@ -81,12 +81,12 @@ const GithubRound = () => {
             // 📝 Log to github_submissions table
             const { error: dbError } = await supabase
                 .from('github_submissions')
-                .upsert({
+                .insert([{
                     team_name: teamName,
                     deploy_link: submissionLink.trim(),
                     github_end_time: new Date().toISOString(),
                     user_id: userId
-                }, { onConflict: 'user_id' });
+                }]);
 
             if (dbError) {
                 console.error("Submission Error:", dbError);
