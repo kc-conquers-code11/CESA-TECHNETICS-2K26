@@ -483,11 +483,11 @@ export default function AdminPanel() {
 
         try {
             const [codingRes, flowchartRes, mcqRes, githubRes, darkmarkRes] = await Promise.all([
-                supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('github_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('darkmark_leaderboard').select('*').eq('user_id', user.user_id).maybeSingle()
+                supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('github_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('darkmark_leaderboard').select('*').eq('user_id', user.user_id).order('updated_at', { ascending: false }).limit(1).maybeSingle()
             ]);
 
             setInspectionData({
