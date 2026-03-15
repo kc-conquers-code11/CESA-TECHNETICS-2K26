@@ -29,6 +29,11 @@ const HackerthonRound = () => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [solemnCheckboxes, setSolemnCheckboxes] = useState({
+        collaborator: false,
+        commit: false,
+        originality: false
+    });
 
     // --- ACADEMY LOGIC: PERSISTENT TIMER ---
     const [roundDuration, setRoundDuration] = useState(60 * 60);
@@ -327,20 +332,77 @@ const HackerthonRound = () => {
                                 <div className="w-20 h-20 rounded-full bg-[#3d2618] border border-[#d4af37]/20 flex items-center justify-center text-[#d4af37] mx-auto mb-6 shadow-[0_0_20px_rgba(212,175,55,0.1)]">
                                     <AlertCircle size={40} />
                                 </div>
-                                <h3 className="text-3xl font-harry tracking-widest text-[#d4af37] mb-4 uppercase">Confirm Selection</h3>
-                                <p className="text-[#f2e0b5]/70 mb-8 leading-relaxed font-crimson text-lg">
-                                    Are you certain you wish to manifest <span className="text-[#f2e0b5] font-bold italic">"{problems.find(p => p.id === selectedId)?.title}"</span>? Once the seal is placed, your quest cannot be altered.
+                                <h3 className="text-3xl font-harry tracking-widest text-[#d4af37] mb-2 uppercase">I Solemnly Swear...</h3>
+                                <p className="text-[#f2e0b5]/50 mb-6 font-crimson italic text-sm">
+                                    "I solemnly swear that I am up to no good... and that I shall follow the Sacred Rules of the Technetics."
                                 </p>
+
+                                <div className="space-y-4 text-left mb-8">
+                                    <label className="flex gap-4 cursor-pointer group/check">
+                                        <div className="relative flex items-center justify-center shrink-0 mt-1">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={solemnCheckboxes.collaborator}
+                                                onChange={(e) => setSolemnCheckboxes(prev => ({ ...prev, collaborator: e.target.checked }))}
+                                                className="peer appearance-none w-5 h-5 border border-[#d4af37]/40 rounded bg-black/40 checked:bg-[#d4af37] checked:border-[#d4af37] transition-all"
+                                            />
+                                            <CheckCircle2 size={12} className="absolute text-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                        </div>
+                                        <span className="text-xs text-[#f2e0b5]/70 leading-relaxed font-sans group-hover/check:text-[#f2e0b5] transition-colors">
+                                            I must add an Event Head <a href="https://github.com/krrishmahar" target="_blank" rel="noopener noreferrer" className="text-[#d4af37] underline hover:text-[#f2e0b5]">@krrishmahar</a> as a collaborator on my GitHub repository.
+                                        </span>
+                                    </label>
+
+                                    <label className="flex gap-4 cursor-pointer group/check">
+                                        <div className="relative flex items-center justify-center shrink-0 mt-1">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={solemnCheckboxes.commit}
+                                                onChange={(e) => setSolemnCheckboxes(prev => ({ ...prev, commit: e.target.checked }))}
+                                                className="peer appearance-none w-5 h-5 border border-[#d4af37]/40 rounded bg-black/40 checked:bg-[#d4af37] checked:border-[#d4af37] transition-all"
+                                            />
+                                            <CheckCircle2 size={12} className="absolute text-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                        </div>
+                                        <span className="text-xs text-[#f2e0b5]/70 leading-relaxed font-sans group-hover/check:text-[#f2e0b5] transition-colors">
+                                            I must commit code progress to GitHub at least every 3 hours.
+                                        </span>
+                                    </label>
+
+                                    <label className="flex gap-4 cursor-pointer group/check">
+                                        <div className="relative flex items-center justify-center shrink-0 mt-1">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={solemnCheckboxes.originality}
+                                                onChange={(e) => setSolemnCheckboxes(prev => ({ ...prev, originality: e.target.checked }))}
+                                                className="peer appearance-none w-5 h-5 border border-[#d4af37]/40 rounded bg-black/40 checked:bg-[#d4af37] checked:border-[#d4af37] transition-all"
+                                            />
+                                            <CheckCircle2 size={12} className="absolute text-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                        </div>
+                                        <span className="text-xs text-[#f2e0b5]/70 leading-relaxed font-sans group-hover/check:text-[#f2e0b5] transition-colors">
+                                            I shall avoid any form of Plagiarism and sought originality in my quest.
+                                        </span>
+                                    </label>
+                                </div>
+
                                 <div className="flex gap-4">
                                     <button
-                                        onClick={() => setShowConfirm(false)}
+                                        onClick={() => {
+                                            setShowConfirm(false);
+                                            setSolemnCheckboxes({ collaborator: false, commit: false, originality: false });
+                                        }}
                                         className="flex-1 py-3 rounded-xl border border-[#8b6e2e]/30 text-[#8b6e2e] font-harry hover:bg-[#3d2618]/30 transition-all tracking-widest text-lg"
                                     >
                                         RETURN
                                     </button>
                                     <button
                                         onClick={() => { setShowConfirm(false); handleConfirm(); }}
-                                        className="flex-1 py-3 rounded-xl bg-[#d4af37] text-[#1a0f08] font-bold font-harry hover:bg-[#f2e0b5] transition-all tracking-widest text-lg shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+                                        disabled={!solemnCheckboxes.collaborator || !solemnCheckboxes.commit || !solemnCheckboxes.originality}
+                                        className={cn(
+                                            "flex-1 py-3 rounded-xl font-bold font-harry transition-all tracking-widest text-lg shadow-[0_0_15px_rgba(212,175,55,0.3)]",
+                                            (solemnCheckboxes.collaborator && solemnCheckboxes.commit && solemnCheckboxes.originality)
+                                                ? "bg-[#d4af37] text-[#1a0f08] hover:bg-[#f2e0b5]"
+                                                : "bg-[#3d2618] text-[#8b6e2e]/40 cursor-not-allowed opacity-50"
+                                        )}
                                     >
                                         CONFIRM
                                     </button>
@@ -375,8 +437,8 @@ const HackerthonRound = () => {
                 </AnimatePresence>
             </main>
 
-            <aside className="w-80 border-l border-[#8b6e2e]/20 bg-[#1a0f08]/60 p-5 hidden xl:flex flex-col gap-6 backdrop-blur-sm">
-                <div className="bg-[#3d2618]/40 rounded-xl p-4 border border-[#8b6e2e]/20 flex items-center justify-between shadow-inner">
+            <aside className="w-80 border-l border-[#8b6e2e]/20 bg-[#1a0f08]/80 p-5 hidden xl:flex flex-col gap-6 backdrop-blur-md">
+                <div className="bg-[#3d2618]/40 rounded-xl p-4 border border-[#8b6e2e]/20 shadow-inner">
                     <CompetitionTimer totalSeconds={roundDuration} onTimeUp={handleConfirm} />
                 </div>
 
@@ -387,14 +449,13 @@ const HackerthonRound = () => {
                             <span className="text-[#d4af37]">QUEST SELECTION</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#8b6e2e]">
-                            <span>Selection Limit</span>
-                            <span className="text-[#f2e0b5]">1 QUEST</span>
+                            <span>Identity Check</span>
+                            <span className="text-[#f2e0b5]">VERIFIED</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#8b6e2e]">
                             <span>Identity</span>
-                            <div className="flex items-center gap-1 text-[#d4af37]">
-                                <ShieldCheck size={12} />
-                                <span>Verified</span>
+                            <div className="flex items-center gap-1 text-[#d4af37] font-mono text-[9px]">
+                                {email}
                             </div>
                         </div>
                     </div>
@@ -419,9 +480,9 @@ const HackerthonRound = () => {
                         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8b6e2e] mb-4 border-b border-[#8b6e2e]/10 pb-1">Sacred Rules</h3>
                         <ul className="space-y-4">
                             {[
-                                "Review the detailed intelligence for each quest",
-                                "The selection process is permanent once sealed",
-                                "Prepare your workspace for the hackathon launch"
+                                "You must add the designated Event Head as a collaborator on your GitHub repository.",
+                                "You must commit your code progress to GitHub at least every 3 hours.",
+                                "Plagiarism and disturbing others are strictly prohibited; originality is sacred."
                             ].map((step, i) => (
                                 <li key={i} className="flex gap-3 text-[11px] text-[#f2e0b5]/50 font-crimson italic">
                                     <span className="text-[#d4af37] font-bold font-harry not-italic">{i + 1}.</span>

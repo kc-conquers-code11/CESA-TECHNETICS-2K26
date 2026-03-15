@@ -96,7 +96,7 @@ export const CompetitionTimer = ({
         <motion.div
           className={cn(
             "h-full rounded-full transition-colors duration-300",
-            isCritical ? "bg-red-500" : isLow ? "bg-yellow-500" : "bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"
+            isCritical ? "bg-red-500" : isLow ? "bg-yellow-500" : "bg-gradient-to-r from-green-500 to-emerald-600 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
           )}
           initial={{ width: '100%' }}
           animate={{ width: `${progress}%` }}
@@ -105,23 +105,23 @@ export const CompetitionTimer = ({
       </div>
 
       {/* Status indicators - Compact inline display */}
-      <div className="flex items-center gap-4 text-xs">
+      <div className="flex flex-wrap items-center gap-y-2 gap-x-3 text-[10px] md:text-xs">
         {/* Current Round */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-zinc-500">Round:</span>
           <span className="font-semibold text-blue-400 capitalize">
             {currentRound === 'mcq' ? 'MCQ' :
-              currentRound === 'flowchart' ? 'Flowchart' :
-                currentRound === 'coding' ? 'Coding' : currentRound}
+              currentRound === 'flowchart' ? 'GitHub Sync' :
+                currentRound === 'coding' ? 'Quest Selection' : currentRound}
           </span>
         </div>
 
         {/* Tab Switch Warning */}
         {tabSwitchCount > 0 && (
           <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 text-xs bg-red-950/30 px-2 py-1 rounded border border-red-900/50"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-1 text-[10px] bg-red-950/40 px-2 py-0.5 rounded border border-red-900/50 text-red-400 shrink-0"
           >
             <AlertTriangle className="w-3 h-3" />
             <span>Switches: {tabSwitchCount}/3</span>
@@ -129,7 +129,7 @@ export const CompetitionTimer = ({
         )}
 
         {/* Security Status */}
-        <div className="flex items-center gap-1.5 text-green-500">
+        <div className="flex items-center gap-1 text-green-500 font-medium ml-auto shrink-0">
           <Shield className="w-3 h-3" />
           <span>Proctored</span>
         </div>
