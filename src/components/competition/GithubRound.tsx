@@ -78,15 +78,15 @@ const GithubRound = () => {
 
             const sessionId = sessionData.id;
 
-            // 📝 Log to github_submissions table (As requested by user)
+            // 📝 Log to github_submissions table
             const { error: dbError } = await supabase
                 .from('github_submissions')
-                .insert([{
+                .upsert({
                     team_name: teamName,
                     deploy_link: submissionLink.trim(),
                     github_end_time: new Date().toISOString(),
-                    user_id: sessionId // Assuming userId is available from useCompetitionStore
-                }]);
+                    user_id: userId
+                }, { onConflict: 'user_id' });
 
             if (dbError) {
                 console.error("Submission Error:", dbError);
