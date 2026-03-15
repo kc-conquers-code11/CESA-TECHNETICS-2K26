@@ -290,7 +290,7 @@ const GithubRound = () => {
                     )}
                     <div className="flex items-center gap-3 p-4 bg-[#d4af37]/5 rounded-xl border border-[#d4af37]/10">
                         <div className="w-2 h-2 rounded-full bg-[#d4af37]/40" />
-                        <p className="text-[11px] text-gray-500 leading-relaxed font-harry text-red-500 tracking-wider opacity-80 uppercase pt-0.5">
+                        <p className="text-[11px] leading-relaxed font-harry text-red-500 tracking-wider opacity-80 uppercase pt-0.5">
                             The Ministry will verify this link for plagiarism and magical integrity.
                         </p>
                     </div>

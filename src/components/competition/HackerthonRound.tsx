@@ -10,7 +10,8 @@ import {
     MonitorCheck,
     ChevronDown,
     Wand2,
-    Sparkles
+    Sparkles,
+    Github
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ const HackerthonRound = () => {
         commit: false,
         originality: false
     });
+    const [githubLink, setGithubLink] = useState('');
 
     // --- ACADEMY LOGIC: PERSISTENT TIMER ---
     const [roundDuration, setRoundDuration] = useState(60 * 60);
@@ -128,7 +130,8 @@ const HackerthonRound = () => {
                     email: email,
                     problem_id: selectedId,
                     selection_time: new Date().toISOString(),
-                    user_id: sessionId 
+                    user_id: sessionId,
+                    github_link: githubLink.trim() || 'No Submission, Disqualified'
                 }]);
 
             if (dbError) {
@@ -148,6 +151,9 @@ const HackerthonRound = () => {
             setIsSubmitting(false);
         }
     };
+
+    const githubRegex = /^(https?:\/\/)?(www\.)?github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-._]+(\/)?$/;
+    const isGithubValid = githubRegex.test(githubLink.trim());
 
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden relative">
@@ -175,7 +181,6 @@ const HackerthonRound = () => {
                                 onClick={() => {
                                     if (!isConfirmed) {
                                         setViewingProblem(prob);
-                                        setSelectedId(prob.id);
                                     }
                                 }}
                                 className={`relative p-6 rounded-2xl border-2 transition-all cursor-pointer bg-[#1a0f08]/80 backdrop-blur-md overflow-hidden group ${selectedId === prob.id
@@ -213,7 +218,9 @@ const HackerthonRound = () => {
 
                     <div className="mt-12">
                         <button
-                            onClick={() => selectedId && setShowConfirm(true)}
+                            onClick={() => {
+                                if (selectedId) setShowConfirm(true);
+                            }}
                             disabled={!selectedId || isConfirmed || isSubmitting}
                             className={cn(
                                 "group relative px-16 py-4 rounded-xl font-harry text-2xl transition-all duration-500 overflow-hidden flex items-center gap-4",
@@ -244,7 +251,9 @@ const HackerthonRound = () => {
                                 className="bg-[#1a0f08] border-2 border-[#d4af37]/40 rounded-3xl p-6 md:p-10 max-w-4xl w-full h-full max-h-[85vh] overflow-y-auto relative custom-scrollbar shadow-[0_0_100px_rgba(0,0,0,1)]"
                             >
                                 <button 
-                                    onClick={() => setViewingProblem(null)}
+                                    onClick={() => {
+                                        setViewingProblem(null);
+                                    }}
                                     className="absolute top-6 right-6 text-[#d4af37]/60 hover:text-[#d4af37] transition-colors p-2 hover:bg-[#3d2618] rounded-full"
                                 >
                                     <ChevronDown className="w-8 h-8 rotate-90" />
@@ -298,10 +307,49 @@ const HackerthonRound = () => {
                                                 ))}
                                             </div>
                                             <div className="mt-8 p-6 bg-[#3d2618]/30 rounded-2xl border border-[#8b6e2e]/20">
+                                                <div className="mb-6">
+                                                    <label className="text-[#f2e0b5]/40 text-[10px] uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                        <Github size={12} className="text-[#d4af37]" /> GitHub Repository Link
+                                                    </label>
+                                                    <input 
+                                                        type="text"
+                                                        value={githubLink}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setGithubLink(val);
+                                                            if (val.trim() !== '') {
+                                                                setSelectedId(null);
+                                                            }
+                                                        }}
+                                                        placeholder="https://github.com/username/quest-repo"
+                                                        className={cn(
+                                                            "w-full bg-black/40 border rounded-xl px-4 py-4 text-[#f2e0b5] text-sm outline-none transition-all font-mono placeholder:text-[#8b6e2e]/40 shadow-inner",
+                                                            githubLink.trim() === '' 
+                                                                ? "border-[#d4af37]/20 focus:border-[#d4af37]/60" 
+                                                                : isGithubValid 
+                                                                    ? "border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.1)]" 
+                                                                    : "border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
+                                                        )}
+                                                    />
+                                                    {githubLink.trim() !== '' && !isGithubValid && (
+                                                        <p className="text-[9px] text-red-500/80 mt-2 italic font-sans">Enchanted URL must be a valid GitHub repository link.</p>
+                                                    )}
+                                                </div>
                                                 <p className="text-[#f2e0b5]/40 text-[10px] uppercase tracking-widest mb-4">Wand Status</p>
                                                 <button 
-                                                    onClick={() => { setViewingProblem(null); }}
-                                                    className="w-full py-4 bg-[#d4af37] text-[#1a0f08] font-harry tracking-widest rounded-xl hover:bg-[#f2e0b5] transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                                                    onClick={() => { 
+                                                        if (isGithubValid) {
+                                                            setSelectedId(viewingProblem.id);
+                                                            setViewingProblem(null); 
+                                                        }
+                                                    }}
+                                                    disabled={!isGithubValid}
+                                                    className={cn(
+                                                        "w-full py-4 font-harry tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]",
+                                                        isGithubValid 
+                                                            ? "bg-[#d4af37] text-[#1a0f08] hover:bg-[#f2e0b5] hover:scale-[1.02]" 
+                                                            : "bg-[#3d2618] text-[#8b6e2e]/40 cursor-not-allowed border border-[#8b6e2e]/20"
+                                                    )}
                                                 >
                                                     Select This Quest
                                                 </button>

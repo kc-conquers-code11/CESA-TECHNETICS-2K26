@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Trophy, LogOut, Star, CheckCircle, PartyPopper } from "lucide-react";
+import { Trophy, LogOut, Star, CheckCircle, PartyPopper, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -81,13 +81,14 @@ export const CompletionPage = () => {
                 transition={{ delay: 0.8 }}
                 className="mt-12"
             >
-                <Button
+                <button
                     onClick={handleLogout}
-                    size="lg"
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-6 text-lg shadow-lg shadow-red-900/20"
+                    className="group relative px-12 py-5 rounded-2xl font-wizard text-2xl tracking-[0.2em] transition-all duration-500 overflow-hidden flex items-center gap-4 bg-gradient-to-r from-[#3d2618] via-[#8b6e2e] to-[#3d2618] text-[#d4af37] border-2 border-[#d4af37]/40 shadow-[0_0_40px_rgba(212,175,55,0.25)] hover:scale-105 active:scale-95 mx-auto"
                 >
-                    <LogOut className="w-5 h-5 mr-2" /> EXIT THE ACADEMY SESSION
-                </Button>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#d4af37]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <Wand2 className="w-6 h-6 text-[#d4af37] group-hover:rotate-12 transition-transform" />
+                    <span className="relative z-10">Mischief Managed</span>
+                </button>
             </motion.div>
 
         </div>

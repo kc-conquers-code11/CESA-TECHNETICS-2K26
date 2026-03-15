@@ -429,13 +429,13 @@
   /* Selection - Red */
 
 ::selection {
-  background: #FFD700;
-  -webkit-text-fill-color: #000;
+  background: #FFD700 !important;
+  -webkit-text-fill-color: #000 !important;
   text-shadow: none;
 }
 ::-moz-selection {
-  background: #FFB702;
-  -webkit-text-fill-color: black;
+  background: #FFB702 !important;
+  -webkit-text-fill-color: black !important;
   color: black;
 }
 
