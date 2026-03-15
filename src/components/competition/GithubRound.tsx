@@ -47,6 +47,7 @@ const GithubRound = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeResource, setActiveResource] = useState(0); // 0: Vercel, 1: GitHub
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // --- PERSISTENCE EFFECT ---
     useEffect(() => {
@@ -55,14 +56,12 @@ const GithubRound = () => {
 
     // --- SUBMISSION LOGIC ---
     const handleSubmit = useCallback(async () => {
-        if (isSubmitting || !submissionLink) return;
+        if (isSubmitting) return;
 
         setError(null);
-
-        if (!submissionLink) {
-            setError("Please enter your deployment link");
-            return;
-        }
+        
+        // Handle empty submission as per user request
+        const finalLink = submissionLink.trim() || 'No Submission, Disqualified';
 
         setIsSubmitting(true);
         const toastId = toast.loading("Submitting GitHub Round Link...");
@@ -87,7 +86,7 @@ const GithubRound = () => {
                 .from('github_submissions')
                 .insert([{
                     team_name: teamName, 
-                    deploy_link: submissionLink.trim(),
+                    deploy_link: finalLink,
                     github_end_time: new Date().toISOString(),
                     user_id: sessionId // Assuming userId is available from useCompetitionStore
                 }]);
@@ -113,7 +112,7 @@ const GithubRound = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [isSubmitting, submissionLink, completeRound, teamName, email, userId]); // Added teamName, email and userId to dependencies
+    }, [isSubmitting, submissionLink, completeRound, teamName, userId]); 
 
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden">
@@ -299,16 +298,70 @@ const GithubRound = () => {
 
                 <div className="mt-9 flex justify-center">
                     <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting || !submissionLink}
+                        onClick={() => setShowConfirmModal(true)}
+                        disabled={isSubmitting}
                         className="flex items-center gap-4 px-12 py-4 rounded-2xl bg-linear-to-r from-[#8a6e2e] to-[#d4af37] text-black font-wizard font-bold text-2xl hover:from-[#d4af37] hover:to-[#FFD700] shadow-[0_0_30px_rgba(212,175,55,0.3)] transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
                         style={buttonStyle}
-
                     >
                         <span>{isSubmitting ? 'Casting Spell...' : 'Submit Solution'}</span>
                         {isSubmitting ? <div className="animate-spin rounded-full h-5 w-5 border-3 border-black/20 border-t-black" /> : <Send size={20} />}
                     </button>
                 </div>
+
+                {/* Confirmation Modal */}
+                <AnimatePresence>
+                    {showConfirmModal && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowConfirmModal(false)}
+                                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                            />
+                            <motion.div 
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="bg-[#0a1516] border-2 border-[#d4af37]/30 rounded-3xl p-8 max-w-lg w-full shadow-[0_0_50px_rgba(212,175,55,0.15)] relative z-10 text-center"
+                            >
+                                <div className="w-20 h-20 bg-[#d4af37]/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#d4af37]/20">
+                                    <Send size={40} className="text-[#d4af37]" />
+                                </div>
+                                
+                                <h3 className="text-3xl font-wizard text-[#FFD700] mb-4 tracking-widest uppercase">Confirm Manifestation</h3>
+                                <p className="text-gray-400 mb-8 leading-relaxed">Are you sure you want to commit your progress to the Ancient Scrolls? This ritual cannot be undone once confirmed.</p>
+                                
+                                <div className="bg-black/60 border border-[#d4af37]/20 rounded-2xl p-5 mb-8 text-left group overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 to-transparent pointer-events-none" />
+                                    <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-[0.2em] mb-2 opacity-60">Portal Destination</p>
+                                    <p className="text-white font-code break-all text-sm">
+                                        {submissionLink.trim() || <span className="text-red-500/80 italic font-sans">'No Submission, Disqualified'</span>}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button 
+                                        onClick={() => setShowConfirmModal(false)}
+                                        className="flex-1 py-4 rounded-xl border border-[#d4af37]/20 text-gray-400 hover:text-[#d4af37] hover:border-[#d4af37]/40 hover:bg-[#d4af37]/5 transition-all font-harry uppercase tracking-widest text-sm"
+                                    >
+                                        Return to Ritual
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            setShowConfirmModal(false);
+                                            handleSubmit();
+                                        }}
+                                        className="flex-1 py-4 rounded-xl text-black font-harry font-bold hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:scale-[1.02] transition-all uppercase tracking-widest text-sm"
+                                        style={{ background: 'linear-gradient(to right, #8a6e2e, #d4af37)' }}
+                                    >
+                                        Manifest Now
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* SIDEBAR */}
