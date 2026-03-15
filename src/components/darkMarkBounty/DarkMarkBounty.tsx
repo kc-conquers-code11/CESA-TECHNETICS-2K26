@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ENVELOPE_CODES } from "@/components/data/darkMarkBounty/envelopeCodes";
+import { CODE_MAPPING, getInternalCode } from "@/components/data/darkMarkBounty/codeMapping";
 import {
   getRandomGame,
   getPuzzle,
@@ -32,7 +33,7 @@ export const DarkMarkBounty: React.FC = () => {
   const [codeError, setCodeError] = useState("");
 
   const { notification, showNotification } = useNotification();
-  
+
   // Auto-initialize currentTeam from global CompetitionStore
   useEffect(() => {
     if (userId) {
@@ -44,7 +45,7 @@ export const DarkMarkBounty: React.FC = () => {
         solved: [],
         usedCodes: [],
       };
-      
+
       // Fetch existing score from Supabase if any
       const fetchScore = async () => {
         const { data, error } = await supabase
@@ -52,7 +53,7 @@ export const DarkMarkBounty: React.FC = () => {
           .select("*")
           .eq("user_id", userId)
           .maybeSingle();
-        
+
         if (data) {
           team.score = data.score;
           team.solved = data.solved_data || [];
@@ -80,47 +81,43 @@ export const DarkMarkBounty: React.FC = () => {
       return;
     }
 
-    const code = codeInput.trim().toUpperCase() as keyof typeof ENVELOPE_CODES;
-    const envelope = ENVELOPE_CODES[code];
+    const mappedCode = getInternalCode(codeInput);
 
-    if (!envelope) {
+    if (!mappedCode) {
       setCodeError("Invalid code. Check your envelope.");
       return;
     }
 
-    if (currentTeam?.usedCodes.includes(code)) {
+    const envelope = ENVELOPE_CODES[mappedCode];
+
+    if (currentTeam?.usedCodes.includes(mappedCode)) {
       setCodeError("Your team already used this code!");
       return;
     }
 
     // 1. Check Concurrency and Cooldown
     try {
-      // Clean up expired attempts/failed ones
       const now = new Date().toISOString();
-      
-      // Check for this user's cooldown on this code
-      const { data: cooldownData } = await supabase
+
+      // Check for this specific user's active hunt for this code OR any other code
+      // We only allow one active hunt per user total
+      const { data: activeHunts } = await supabase
         .from("bounty_attempts")
         .select("*")
         .eq("user_id", userId)
-        .eq("code", code)
-        .eq("status", "failed")
-        .gt("expires_at", now)
-        .order('expires_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq("status", "active")
+        .gt("expires_at", now);
 
-      if (cooldownData) {
-        const remaining = Math.ceil((new Date(cooldownData.expires_at).getTime() - Date.now()) / 1000);
-        setCodeError(`Cooldown active! Wait ${remaining}s to retry code ${code}.`);
+      if (activeHunts && activeHunts.length > 0) {
+        setCodeError("You have an active hunt! Complete or fail it first.");
         return;
       }
 
-      // Check current active users for this code
+      // Check current active users for THIS code (Global Limit: 2)
       const { count } = await supabase
         .from("bounty_attempts")
         .select("*", { count: 'exact', head: true })
-        .eq("code", code)
+        .eq("code", mappedCode)
         .eq("status", "active")
         .gt("expires_at", now);
 
@@ -134,16 +131,17 @@ export const DarkMarkBounty: React.FC = () => {
         .from("bounty_attempts")
         .insert({
           user_id: userId,
-          code: code,
+          team_name: currentTeam.name,
+          code: mappedCode,
           status: "active",
-          expires_at: new Date(Date.now() + 130000).toISOString() // 2m 10s (buffer over 120s timeout)
+          expires_at: new Date(Date.now() + 130000).toISOString() // 2m 10s buffer
         });
 
       if (attemptError) throw attemptError;
 
       const gameType = getRandomGame(envelope.difficulty);
       const puzzle = getPuzzle(gameType, envelope.difficulty);
-      setActiveGame({ code, envelope, gameType, puzzle, startTime: Date.now() });
+      setActiveGame({ code: mappedCode, envelope, gameType, puzzle, startTime: Date.now() });
       setCodeError("");
       setCodeInput("");
       setScreen("game");
@@ -159,9 +157,9 @@ export const DarkMarkBounty: React.FC = () => {
       if (activeGame && userId) {
         await supabase
           .from("bounty_attempts")
-          .update({ 
-            status: "failed", 
-            expires_at: new Date(Date.now() + 120000).toISOString() 
+          .update({
+            status: "failed",
+            expires_at: new Date(Date.now() + 120000).toISOString()
           })
           .eq("user_id", userId)
           .eq("code", activeGame.code)
@@ -204,7 +202,7 @@ export const DarkMarkBounty: React.FC = () => {
     // Update Attempt Status
     await supabase
       .from("bounty_attempts")
-      .update({ 
+      .update({
         status: won ? "solved" : "failed",
         expires_at: won ? new Date().toISOString() : new Date(Date.now() + 120000).toISOString() // 2 min cooldown if failed
       })
@@ -232,11 +230,11 @@ export const DarkMarkBounty: React.FC = () => {
     setCurrentTeam((prev) =>
       prev
         ? {
-            ...prev,
-            score: newScore,
-            solved: newSolved,
-            usedCodes: newUsedCodes,
-          }
+          ...prev,
+          score: newScore,
+          solved: newSolved,
+          usedCodes: newUsedCodes,
+        }
         : null,
     );
 
@@ -274,39 +272,39 @@ export const DarkMarkBounty: React.FC = () => {
   return (
     <div className="dark-mark-bounty-root">
       <div style={{ height: '100%' }}>
-          {notification && (
-            <div className={`notif notif-${notification.type}`}>
-              {notification.msg}
-            </div>
-          )}
+        {notification && (
+          <div className={`notif notif-${notification.type}`}>
+            {notification.msg}
+          </div>
+        )}
 
-          {screen === "team" && currentTeam && (
-            <TeamDashboard
-              team={teams.find((t) => t.id === currentTeam.id) || currentTeam}
-              codeInput={codeInput}
-              setCodeInput={setCodeInput}
-              codeError={codeError}
-              onSubmitCode={handleCodeSubmit}
-              onLeaderboard={() => setScreen("leaderboard")}
-              onLogout={async () => {
-                // Logout now just takes you back to the leaderboard or resets view
-                await supabase.auth.signOut();
-                navigate('/login');
-              }}
-            />
-          )}
+        {screen === "team" && currentTeam && (
+          <TeamDashboard
+            team={teams.find((t) => t.id === currentTeam.id) || currentTeam}
+            codeInput={codeInput}
+            setCodeInput={setCodeInput}
+            codeError={codeError}
+            onSubmitCode={handleCodeSubmit}
+            onLeaderboard={() => setScreen("leaderboard")}
+            onLogout={async () => {
+              // Logout now just takes you back to the leaderboard or resets view
+              await supabase.auth.signOut();
+              navigate('/login');
+            }}
+          />
+        )}
 
-          {screen === "game" && activeGame && (
-            <GameScreen game={activeGame} onComplete={handleGameComplete} />
-          )}
+        {screen === "game" && activeGame && (
+          <GameScreen game={activeGame} onComplete={handleGameComplete} />
+        )}
 
-          {screen === "leaderboard" && (
-            <LeaderboardScreen
-              onBack={() => setScreen("team")}
-            />
-          )}
+        {screen === "leaderboard" && (
+          <LeaderboardScreen
+            onBack={() => setScreen("team")}
+          />
+        )}
 
-          {/* {screen === "admin" && (
+        {/* {screen === "admin" && (
             <AdminScreen
               teams={sortedTeams}
               codes={ENVELOPE_CODES}
