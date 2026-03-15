@@ -63,7 +63,7 @@ const LockedRules = () => {
                     The competition protocols are classified. You must identify yourself to access the <span className="text-red-500 font-bold glow-text">Forbidden Forest</span> rules.
                 </p>
             </div>
-            <button onClick={() => navigate('/login')} className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg tracking-wider transition-all shadow-lg hover:shadow-red-900/50">
+            <button onClick={() => navigate('/games')} className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg tracking-wider transition-all shadow-lg hover:shadow-red-900/50">
                 LOGIN TO UNLOCK
             </button>
         </div>
@@ -349,7 +349,7 @@ const HomePage = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setShowIntro(true);
-    navigate('/login');
+    navigate('/games');
   };
 
   if (loading) return <div className="min-h-screen bg-black" />;
@@ -394,7 +394,7 @@ const HomePage = () => {
                                 </button>
                             </div>
                         ) : (
-                            <button onClick={() => navigate('/login')} className="px-5 py-2 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 text-white font-bold rounded-md shadow-lg">LOGIN / SIGNUP</button>
+                            <button onClick={() => navigate('/games')} className="px-5 py-2 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 text-white font-bold rounded-md shadow-lg">LOGIN / SIGNUP</button>
                         )}
                     </div>
                     </div>

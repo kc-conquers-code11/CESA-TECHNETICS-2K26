@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: { children: R
       
       if (!session) {
         // Agar login nahi hai -> Login page bhejo
-        navigate('/login');
+        navigate('/games');
         return;
       }
 
