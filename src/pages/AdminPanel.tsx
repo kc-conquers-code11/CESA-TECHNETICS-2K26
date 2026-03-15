@@ -101,6 +101,17 @@ interface InspectionData {
         total_score?: number;
         status?: string;
         timestamp: string;
+        updated_at?: string;
+    } | null;
+    github?: {
+        deploy_link: string;
+        github_end_time: string;
+        created_at: string;
+    } | null;
+    darkmark?: {
+        score: number;
+        solved_count: number;
+        updated_at: string;
     } | null;
 }
 
@@ -134,6 +145,15 @@ const FlowchartViewer = ({ nodes, edges }: { nodes: any[], edges: any[] }) => {
 
 // --- INSPECTION MODAL (For Monitor Tab) ---
 function InspectionModal({ user, loading, data, onClose }: { user: Participant; loading: boolean; data: InspectionData | null; onClose: () => void }) {
+    const formatInspectionTime = (isoString?: string) => {
+        if (!isoString) return "--:--:--";
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return "Invalid Date";
+            return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        } catch (e) { return "--:--:--"; }
+    };
+
     return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-zinc-950 border border-zinc-800 w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
@@ -178,13 +198,18 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
                                     <TabsTrigger value="coding" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"><Code className="w-4 h-4 mr-2" /> Coding</TabsTrigger>
                                     <TabsTrigger value="flowchart" className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black"><Workflow className="w-4 h-4 mr-2" /> Flowchart</TabsTrigger>
                                     <TabsTrigger value="mcq" className="data-[state=active]:bg-green-600 data-[state=active]:text-white"><ListChecks className="w-4 h-4 mr-2" /> MCQ</TabsTrigger>
+                                    <TabsTrigger value="github" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white"><Activity className="w-4 h-4 mr-2" /> GitHub</TabsTrigger>
+                                    <TabsTrigger value="darkmark" className="data-[state=active]:bg-red-600 data-[state=active]:text-white"><Shield className="w-4 h-4 mr-2" /> Dark Mark</TabsTrigger>
                                 </TabsList>
 
                                 {/* CODING TAB */}
                                 <TabsContent value="coding" className="space-y-6 flex-1">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
-                                            <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Coding Status</div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider">Coding Status</div>
+                                                <div className="text-xs font-mono text-zinc-500 bg-black px-2 py-0.5 rounded border border-zinc-800">{formatInspectionTime(data?.coding?.updated_at || data?.coding?.timestamp)}</div>
+                                            </div>
                                             <div className={cn("text-lg font-bold capitalize", data?.coding?.status === 'completed' ? "text-green-400" : "text-yellow-500")}>
                                                 {data?.coding?.status || "Not Started"}
                                             </div>
@@ -192,7 +217,7 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
                                         <div className="bg-zinc-900 p-4 rounded-lg border border-zinc-800">
                                             <div className="text-zinc-500 text-xs uppercase font-bold tracking-wider mb-1">Total Score</div>
                                             <div className="text-2xl font-mono font-bold text-white">
-                                                {data?.coding?.problem_set 
+                                                {data?.coding?.problem_set
                                                     ? (data.coding.problem_set.reduce((acc: number, curr: any) => acc + (parseFloat(curr.runResult?.score) || 0), 0) / 2)
                                                     : (data?.coding?.total_score || 0)
                                                 }
@@ -228,8 +253,11 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
 
                                 {/* FLOWCHART TAB */}
                                 <TabsContent value="flowchart" className="flex-1 space-y-4">
-                                    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6">
-                                        <div className="flex-1 bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2">AI Score</p><div className="text-4xl font-bold text-blue-400">{data?.flowchart?.ai_score}<span className="text-lg text-zinc-600">/100</span></div></div>
+                                    <div className="bg-zinc-900/50 rounded-xl border border-zinc-800 p-6 flex flex-col md:flex-row gap-6 relative">
+                                        <div className="absolute top-4 right-6 text-xs font-mono text-zinc-500 bg-black px-2 py-1 rounded border border-zinc-800">
+                                            {formatInspectionTime((data?.flowchart as any)?.created_at || data?.flowchart?.timestamp)}
+                                        </div>
+                                        <div className="flex-1 bg-black/40 p-4 rounded-lg border border-zinc-800 mt-4 md:mt-0"><p className="text-xs text-zinc-500 uppercase font-bold mb-2">AI Score</p><div className="text-4xl font-bold text-blue-400">{data?.flowchart?.ai_score || 0}<span className="text-lg text-zinc-600">/100</span></div></div>
                                         <div className="flex-[2] bg-black/40 p-4 rounded-lg border border-zinc-800"><p className="text-xs text-zinc-500 uppercase font-bold mb-2 flex items-center gap-2"><Cpu className="w-3 h-3" /> AI Feedback</p><p className="text-zinc-300 text-sm leading-relaxed">{data?.flowchart?.ai_feedback || "No feedback generated."}</p></div>
                                     </div>
                                     <div className="space-y-2">
@@ -240,10 +268,63 @@ function InspectionModal({ user, loading, data, onClose }: { user: Participant; 
 
                                 {/* MCQ TAB */}
                                 <TabsContent value="mcq">
-                                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 relative">
+                                        <div className="absolute top-6 right-6 text-xs font-mono text-zinc-500 bg-black px-2 py-1 rounded border border-zinc-800">
+                                            {formatInspectionTime((data?.mcq as any)?.updated_at || data?.mcq?.timestamp)}
+                                        </div>
                                         <h3 className="text-lg font-bold text-white mb-4">MCQ Results</h3>
                                         <div className="text-4xl font-mono font-bold text-indigo-400">{data?.mcq?.score || 0} <span className="text-lg text-zinc-600">/ Total</span></div>
                                         <div className="mt-6 bg-black/40 p-4 rounded-lg border border-zinc-800 font-mono text-xs text-zinc-400 whitespace-pre-wrap max-h-[300px] overflow-auto">{JSON.stringify(data?.mcq?.answers, null, 2)}</div>
+                                    </div>
+                                </TabsContent>
+
+                                {/* GITHUB TAB */}
+                                <TabsContent value="github">
+                                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Activity className="w-5 h-5 text-orange-500" /> GitHub Manifestation</h3>
+
+                                        {data?.github ? (
+                                            <div className="space-y-4">
+                                                <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-2">Submitted Link</p>
+                                                    <a href={data.github.deploy_link.startsWith('http') ? data.github.deploy_link : `https://${data.github.deploy_link}`} target="_blank" rel="noopener noreferrer" className="text-lg font-mono text-blue-400 hover:text-blue-300 transition-colors break-all">
+                                                        {data.github.deploy_link}
+                                                    </a>
+                                                </div>
+                                                <div className="bg-black/40 p-4 rounded-lg border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-2">Completion Time</p>
+                                                    <p className="text-lg font-mono text-zinc-300">{formatInspectionTime(data.github.github_end_time || data.github.created_at)}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center p-10 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20 text-zinc-500">No GitHub Submission Data</div>
+                                        )}
+                                    </div>
+                                </TabsContent>
+
+                                {/* DARK MARK TAB */}
+                                <TabsContent value="darkmark">
+                                    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-red-500" /> Dark Mark Bounty</h3>
+
+                                        {data?.darkmark ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-black/40 p-5 rounded-lg border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Bounty Score</p>
+                                                    <div className="text-4xl font-mono font-bold text-red-500">{data.darkmark.score} <span className="text-lg text-zinc-600">pts</span></div>
+                                                </div>
+                                                <div className="bg-black/40 p-5 rounded-lg border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Solved Count</p>
+                                                    <div className="text-4xl font-mono font-bold text-orange-400">{data.darkmark.solved_count}</div>
+                                                </div>
+                                                <div className="col-span-2 bg-black/40 p-4 rounded-lg border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Last Update Time</p>
+                                                    <p className="text-lg font-mono text-zinc-300">{formatInspectionTime(data.darkmark.updated_at)}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center p-10 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20 text-zinc-500">No Dark Mark Leaderboard Data</div>
+                                        )}
                                     </div>
                                 </TabsContent>
                             </Tabs>
@@ -401,16 +482,20 @@ export default function AdminPanel() {
         setInspectionData(null);
 
         try {
-            const [codingRes, flowchartRes, mcqRes] = await Promise.all([
-                supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).maybeSingle(),
-                supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).maybeSingle()
+            const [codingRes, flowchartRes, mcqRes, githubRes, darkmarkRes] = await Promise.all([
+                supabase.from('coding_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('flowchart_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('mcq_submissions').select('*').eq('user_id', user.user_id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('github_submissions').select('*').eq('user_id', user.user_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+                supabase.from('darkmark_leaderboard').select('*').eq('user_id', user.user_id).order('updated_at', { ascending: false }).limit(1).maybeSingle()
             ]);
 
             setInspectionData({
                 coding: codingRes.data,
                 flowchart: flowchartRes.data,
-                mcq: mcqRes.data
+                mcq: mcqRes.data,
+                github: githubRes.data,
+                darkmark: darkmarkRes.data
             });
         } catch (e) {
             console.error("Inspection Error:", e);

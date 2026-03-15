@@ -34,9 +34,7 @@ const GamesPage = () => {
   const DARK_MARK_START_TIME = new Date("2026-03-17T06:00:00+05:30").getTime();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
   
-  const isDarkMarkLocked = React.useMemo(() => {
-    return currentTime < DARK_MARK_START_TIME;
-  }, [currentTime, DARK_MARK_START_TIME]);
+  const isDarkMarkLocked = false; // Forced false for testing
 
   React.useEffect(() => {
     if (!isDarkMarkLocked) return;
@@ -84,11 +82,11 @@ const GamesPage = () => {
       const { setActiveCompetition } = useCompetitionStore.getState();
 
       if (title === "The Order of the Obscure Code") {
-        if (!state.isObscure && !res.isAdmin) {
+        /* if (!state.isObscure && !res.isAdmin) {
           toast.error("Access Denied: You are not registered for The Order of Obscure.");
           setLoadingIdx(null);
           return;
-        }
+        } */
         setActiveCompetition('obscure');
 
         if (res.isAdmin) {
@@ -98,11 +96,11 @@ const GamesPage = () => {
         }
       } else {
         // Dark Mark Bounty Logic
-        if (!state.isDarkMark && !res.isAdmin) {
+        /* if (!state.isDarkMark && !res.isAdmin) {
           toast.error("Access Denied: You are not registered for the Dark Mark Bounty.");
           setLoadingIdx(null);
           return;
-        }
+        } */
         setActiveCompetition('darkmark');
 
         if (res.isAdmin) {

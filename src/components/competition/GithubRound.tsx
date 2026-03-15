@@ -22,32 +22,59 @@ import { toast } from 'sonner';
 
 const GithubRound = () => {
     // useAntiCheat(); // Anti-cheat disabled for this round
-    const { completeRound, email, userId, teamName } = useCompetitionStore();
-      const buttonStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem', // 2 units
-  padding: '0.75rem 1.5rem', // py-3 px-6
-  borderRadius: '0.75rem', // rounded-xl
-  background: 'linear-gradient(to right, #FFB702, #FFD05A)',
-  color: 'black',
-  fontWeight: 600, // font-semibold
-  boxShadow: '0 0 20px rgba(255, 183, 0, 0.6)',
-  transition: 'all 0.3s ease', // duration-300
-  cursor: 'pointer',
-};
-    
+    const { completeRound, email, userId, teamName, startFlowchart, flowchartStartTime } = useCompetitionStore();
+    const buttonStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem', // 2 units
+        padding: '0.75rem 1.5rem', // py-3 px-6
+        borderRadius: '0.75rem', // rounded-xl
+        background: 'linear-gradient(to right, #FFB702, #FFD05A)',
+        color: 'black',
+        fontWeight: 600, // font-semibold
+        boxShadow: '0 0 20px rgba(255, 183, 0, 0.6)',
+        transition: 'all 0.3s ease', // duration-300
+        cursor: 'pointer',
+    };
+
     const [submissionLink, setSubmissionLink] = useState(() => {
         return localStorage.getItem('github_submission_link') || '';
     });
 
-    // --- ACADEMY LOGIC: PERSISTENT TIMER ---
+    // --- ACADEMY LOGIC: PERSISTENT SERVER TIMER ---
     const [roundDuration, setRoundDuration] = useState(60 * 60);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeResource, setActiveResource] = useState(0); // 0: Vercel, 1: GitHub
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+    // 0. Fetch Timer Config from Server
+    useEffect(() => {
+        const fetchTimerConfig = async () => {
+            try {
+                const { data: config } = await supabase
+                    .from('game_config')
+                    .select('value')
+                    .eq('key', 'flowchart_duration')
+                    .single();
+
+                if (config?.value) {
+                    setRoundDuration(parseInt(config.value) * 60);
+                }
+            } catch (e) {
+                console.warn("Could not load timer config, using default (60m).");
+            }
+        };
+        fetchTimerConfig();
+    }, []);
+
+    // 1. Start Round Timer in Store on Mount
+    useEffect(() => {
+        if (!flowchartStartTime) {
+            startFlowchart();
+        }
+    }, [flowchartStartTime, startFlowchart]);
 
     // --- PERSISTENCE EFFECT ---
     useEffect(() => {
@@ -56,7 +83,9 @@ const GithubRound = () => {
 
     // --- SUBMISSION LOGIC ---
     const handleSubmit = useCallback(async () => {
-        if (isSubmitting) return;
+        if (isSubmitting) {
+            return;
+        }
 
         setError(null);
         
@@ -85,7 +114,7 @@ const GithubRound = () => {
             const { error: dbError } = await supabase
                 .from('github_submissions')
                 .insert([{
-                    team_name: teamName, 
+                    team_name: teamName,
                     deploy_link: finalLink,
                     github_end_time: new Date().toISOString(),
                     user_id: sessionId // Assuming userId is available from useCompetitionStore
@@ -103,7 +132,7 @@ const GithubRound = () => {
             localStorage.removeItem('github_submission_link');
             localStorage.removeItem('github_switches');
             localStorage.removeItem('github_frozen');
-            
+
             await completeRound('flowchart');
             toast.success("Ancient Runes manifested successfully!", { id: toastId });
         } catch (err) {
@@ -112,7 +141,7 @@ const GithubRound = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [isSubmitting, submissionLink, completeRound, teamName, userId]); 
+    }, [isSubmitting, submissionLink, completeRound, teamName, userId, email]);
 
     return (
         <div className="flex gap-4 h-full w-full animate-in fade-in duration-500 overflow-hidden">
@@ -367,7 +396,11 @@ const GithubRound = () => {
             {/* SIDEBAR */}
             <aside className="w-80 border-l border-[#d4af37]/10 bg-[#051112]/40 p-5 hidden xl:flex flex-col gap-6">
                 <div className="bg-black/40 rounded-xl p-4 border border-[#d4af37]/10">
-                    <CompetitionTimer totalSeconds={roundDuration} onTimeUp={handleSubmit} />
+                    <CompetitionTimer 
+                        totalSeconds={roundDuration} 
+                        targetDate={flowchartStartTime ? new Date(flowchartStartTime + roundDuration * 1000).toISOString() : null}
+                        onTimeUp={handleSubmit} 
+                    />
                 </div>
 
                 <div className="space-y-5">
