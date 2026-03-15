@@ -145,6 +145,20 @@ export const DarkMarkBounty: React.FC = () => {
         return;
       }
 
+      // Check for fail cooldown for this specific code
+      const { data: failedHunts } = await supabase
+        .from("bounty_attempts")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("code", mappedCode)
+        .eq("status", "failed")
+        .gt("expires_at", now);
+
+      if (failedHunts && failedHunts.length > 0) {
+        setCodeError("Code on cooldown. Please wait 2 minutes after failing.");
+        return;
+      }
+
       // Check current active users for THIS code (Global Limit: 2)
       const { count } = await supabase
         .from("bounty_attempts")
@@ -159,6 +173,10 @@ export const DarkMarkBounty: React.FC = () => {
       }
 
       // 2. Register Active Attempt
+      const timeoutMsMap = { easy: 5 * 60000, medium: 8 * 60000, hard: 12 * 60000 };
+      const timeoutMs = timeoutMsMap[envelope.difficulty as keyof typeof timeoutMsMap] || 90 * 60000;
+      const bufferMs = 10000; // 10s buffer
+
       const { error: attemptError } = await supabase
         .from("bounty_attempts")
         .insert({
@@ -166,7 +184,7 @@ export const DarkMarkBounty: React.FC = () => {
           team_name: currentTeam.name,
           code: mappedCode,
           status: "active",
-          expires_at: new Date(Date.now() + 130000).toISOString() // 2m 10s buffer
+          expires_at: new Date(Date.now() + timeoutMs + bufferMs).toISOString()
         });
 
       if (attemptError) throw attemptError;
