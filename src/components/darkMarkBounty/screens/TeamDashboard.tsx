@@ -9,6 +9,8 @@ interface Props {
   onSubmitCode: () => void;
   onLeaderboard: () => void;
   onLogout: () => void;
+  hasActiveGame: boolean;
+  onResumeGame: () => void;
 }
 
 export const TeamDashboard: React.FC<Props> = ({
@@ -19,6 +21,8 @@ export const TeamDashboard: React.FC<Props> = ({
   onSubmitCode,
   onLeaderboard,
   onLogout,
+  hasActiveGame,
+  onResumeGame,
 }) => {
   return (
     <div className="screen team-screen">
@@ -66,6 +70,11 @@ export const TeamDashboard: React.FC<Props> = ({
       )}
 
       <div className="team-actions">
+        {hasActiveGame && (
+          <button className="btn btn-primary" onClick={onResumeGame} style={{ backgroundColor: '#ff9900' }}>
+            ⚡ Resume Active Game
+          </button>
+        )}
         <button className="btn btn-ghost" onClick={onLeaderboard}>
           📊 Leaderboard
         </button>

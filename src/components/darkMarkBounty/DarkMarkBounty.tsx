@@ -90,7 +90,8 @@ export const DarkMarkBounty: React.FC = () => {
               startTime: new Date(attempt.created_at || Date.now()).getTime(),
               expiresAt: attempt.expires_at
             });
-            setScreen("game");
+            // Don't auto-redirect, let the user click Resume
+            // setScreen("game");
           }
         }
       };
@@ -321,6 +322,10 @@ export const DarkMarkBounty: React.FC = () => {
             setCodeInput={setCodeInput}
             codeError={codeError}
             onSubmitCode={handleCodeSubmit}
+            hasActiveGame={!!activeGame}
+            onResumeGame={() => {
+              if (activeGame) setScreen("game");
+            }}
             onLeaderboard={() => setScreen("leaderboard")}
             onLogout={async () => {
               // Logout now just takes you back to the leaderboard or resets view
