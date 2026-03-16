@@ -1,0 +1,92 @@
+export const BASE_PUZZLES = {
+  easy: [
+    {
+      display: "101101₂",
+      from: "binary",
+      to: "decimal",
+      answer: "45",
+      hint: "1×32 + 0×16 + 1×8 + 1×4 + 0×2 + 1×1",
+    },
+    {
+      display: "1010₂",
+      from: "binary",
+      to: "decimal",
+      answer: "10",
+      hint: "8+2=?",
+    },
+    {
+      display: "11111111₂",
+      from: "binary",
+      to: "decimal",
+      answer: "255",
+      hint: "All 8 bits = 2⁸ - 1",
+    },
+    {
+      display: "1100100₂",
+      from: "binary",
+      to: "decimal",
+      answer: "100",
+      hint: "64+32+4",
+    },
+  ],
+  medium: [
+    {
+      display: "255",
+      from: "decimal",
+      to: "hex",
+      answer: "FF",
+      hint: "256-1 in hex",
+    },
+    {
+      display: "16",
+      from: "decimal",
+      to: "hex",
+      answer: "10",
+      hint: "16 = 1×16 + 0",
+    },
+    {
+      display: "200",
+      from: "decimal",
+      to: "hex",
+      answer: "C8",
+      hint: "12×16 + 8",
+    },
+    {
+      display: "173",
+      from: "decimal",
+      to: "hex",
+      answer: "AD",
+      hint: "10×16 + 13",
+    },
+  ],
+  hard: [
+    {
+      display: "1010 1111₂",
+      from: "binary",
+      to: "hex",
+      answer: "AF",
+      hint: "Split into nibbles: 1010=A, 1111=F",
+    },
+    {
+      display: "1111 0000₂",
+      from: "binary",
+      to: "hex",
+      answer: "F0",
+      hint: "1111=F, 0000=0",
+    },
+    {
+      display: "0011 1100₂",
+      from: "binary",
+      to: "hex",
+      answer: "3C",
+      hint: "0011=3, 1100=C",
+    },
+    {
+      display: "1001 0110₂",
+      from: "binary",
+      to: "hex",
+      answer: "96",
+      hint: "1001=9, 0110=6",
+    },
+  ],
+} as const;
