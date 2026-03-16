@@ -38,7 +38,7 @@ export const TeamDashboard: React.FC<Props> = ({
         <div className="code-row">
           <input
             className="input code-input"
-            placeholder="e.g. DM208"
+            placeholder="e.g. HARRY"
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && onSubmitCode()}
@@ -68,9 +68,6 @@ export const TeamDashboard: React.FC<Props> = ({
       <div className="team-actions">
         <button className="btn btn-ghost" onClick={onLeaderboard}>
           📊 Leaderboard
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={onLogout}>
-          Logout
         </button>
       </div>
     </div>

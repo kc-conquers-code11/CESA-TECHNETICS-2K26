@@ -1,7 +1,7 @@
 import type {
-    EnvelopeCode,
-    Difficulty,
-    Color,
+  EnvelopeCode,
+  Difficulty,
+  Color,
 } from "../data/darkMarkBounty/envelopeCodes";
 import type { GameType } from "../data/darkMarkBounty";
 
@@ -32,6 +32,7 @@ export interface ActiveGame {
   gameType: GameType;
   puzzle: any;
   startTime: number;
+  expiresAt?: string;
 }
 
 export interface Notification {

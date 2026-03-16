@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ENVELOPE_CODES } from "@/components/data/darkMarkBounty/envelopeCodes";
 import { CODE_MAPPING, getInternalCode } from "@/components/data/darkMarkBounty/codeMapping";
 import {
-  getRandomGame,
-  getPuzzle,
+  getPuzzleForCode,
 } from "@/utils/darkMarkBounty/gameHelpers";
 import { useNotification } from "@/hooks/darkMarkBounty/useNotification";
 import type { Team, ActiveGame, Screen } from "@/types/darkMarkBounty";
@@ -31,6 +30,7 @@ export const DarkMarkBounty: React.FC = () => {
   const [adminView, setAdminView] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { notification, showNotification } = useNotification();
 
@@ -67,7 +67,36 @@ export const DarkMarkBounty: React.FC = () => {
         setCurrentTeam(team);
       };
 
+      const fetchActiveAttempt = async () => {
+        const now = new Date().toISOString();
+        const { data: activeHunts } = await supabase
+          .from("bounty_attempts")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .gt("expires_at", now);
+
+        if (activeHunts && activeHunts.length > 0) {
+          const attempt = activeHunts[0];
+          const mappedCode = attempt.code as keyof typeof ENVELOPE_CODES;
+          const envelope = ENVELOPE_CODES[mappedCode];
+          if (envelope) {
+            const { gameType, puzzle } = getPuzzleForCode(mappedCode);
+            setActiveGame({
+              code: mappedCode,
+              envelope,
+              gameType,
+              puzzle,
+              startTime: new Date(attempt.created_at || Date.now()).getTime(),
+              expiresAt: attempt.expires_at
+            });
+            setScreen("game");
+          }
+        }
+      };
+
       fetchScore();
+      fetchActiveAttempt();
     }
   }, [teamName, email, userId]);
 
@@ -80,6 +109,9 @@ export const DarkMarkBounty: React.FC = () => {
       setCodeError("The round is not active!");
       return;
     }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     const mappedCode = getInternalCode(codeInput);
 
@@ -127,6 +159,9 @@ export const DarkMarkBounty: React.FC = () => {
       }
 
       // 2. Register Active Attempt
+      const timeout = envelope.difficulty === "easy" ? 240 : envelope.difficulty === "medium" ? 480 : 720;
+      const expiresAt = new Date(Date.now() + (timeout + 10) * 1000).toISOString();
+
       const { error: attemptError } = await supabase
         .from("bounty_attempts")
         .insert({
@@ -134,20 +169,21 @@ export const DarkMarkBounty: React.FC = () => {
           team_name: currentTeam.name,
           code: mappedCode,
           status: "active",
-          expires_at: new Date(Date.now() + 130000).toISOString() // 2m 10s buffer
+          expires_at: expiresAt
         });
 
       if (attemptError) throw attemptError;
 
-      const gameType = getRandomGame(envelope.difficulty);
-      const puzzle = getPuzzle(gameType, envelope.difficulty);
-      setActiveGame({ code: mappedCode, envelope, gameType, puzzle, startTime: Date.now() });
+      const { gameType, puzzle } = getPuzzleForCode(mappedCode);
+      setActiveGame({ code: mappedCode, envelope, gameType, puzzle, startTime: Date.now(), expiresAt });
       setCodeError("");
       setCodeInput("");
       setScreen("game");
     } catch (err) {
       console.error("Bounty safety check error:", err);
       setCodeError("Safety check failed. Try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -31,7 +31,8 @@ const GamesPage = () => {
   const [direction, setDirection] = React.useState(0);
   const [loadingIdx, setLoadingIdx] = React.useState<number | null>(null);
 
-  const DARK_MARK_START_TIME = new Date("2026-03-17T06:00:00+05:30").getTime();
+  // const DARK_MARK_START_TIME = new Date("2026-03-17T06:00:00+05:30").getTime();
+  const DARK_MARK_START_TIME = new Date("2026-03-17T02:00:00+05:30").getTime();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
   
   const isDarkMarkLocked = React.useMemo(() => {

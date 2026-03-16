@@ -1,27 +1,8 @@
-import { PUZZLES, GAME_TYPES, type GameType } from "@/components/data/darkMarkBounty";
+import { getPuzzleForCode } from "@/components/data/darkMarkBounty/puzzleMapping";
+import type { GameType } from "@/components/data/darkMarkBounty";
 import type { Difficulty } from "@/components/data/darkMarkBounty/envelopeCodes";
 
-export const getRandom = <T>(arr: T[]): T => {
-  return arr[Math.floor(Math.random() * arr.length)];
-};
-
-export const getRandomGame = (difficulty: Difficulty): GameType => {
-  return getRandom([...GAME_TYPES]);
-};
-
-export const getPuzzle = (gameType: GameType, difficulty: Difficulty) => {
-  const puzzles = PUZZLES[gameType];
-  const difficultyPuzzles = puzzles[difficulty as keyof typeof puzzles];
-
-  if (
-    !difficultyPuzzles ||
-    (Array.isArray(difficultyPuzzles) && difficultyPuzzles.length === 0)
-  ) {
-    return getRandom(puzzles.easy as unknown as any[]);
-  }
-
-  return getRandom(difficultyPuzzles as unknown as any[]);
-};
+export { getPuzzleForCode };
 
 export const GAME_NAMES: Record<GameType, string> = {
   binary: "Binary Decoder",

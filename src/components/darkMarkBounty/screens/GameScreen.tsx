@@ -23,6 +23,7 @@ import { DataStructureGame } from "../games/DataStructureGame";
 import { SwapSortGame } from "../games/SwapSortGame";
 import { TerminalGame } from "../games/TerminalGame";
 import { CodeOutputGame } from "../games/CodeOutputGame";
+import { useCustomAntiCheat } from "@/hooks/darkMarkBounty/useCustomAntiCheat";
 
 interface Props {
   game: ActiveGame;
@@ -30,8 +31,20 @@ interface Props {
 }
 
 export const GameScreen: React.FC<Props> = ({ game, onComplete }) => {
+  useCustomAntiCheat();
+
   const [attempts, setAttempts] = useState(MAX_ATTEMPTS);
-  const [timeLeft, setTimeLeft] = useState(GAME_TIMEOUT);
+
+  const initialTimeout = game.envelope.difficulty === "easy" ? 240 : game.envelope.difficulty === "medium" ? 480 : 720;
+  const getCalculatedTimeLeft = () => {
+    if (game.expiresAt) {
+      const remaining = Math.floor((new Date(game.expiresAt).getTime() - Date.now()) / 1000) - 10;
+      return Math.max(0, Math.min(remaining, initialTimeout));
+    }
+    return initialTimeout;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getCalculatedTimeLeft());
   const [done, setDone] = useState(false);
 
   useEffect(() => {
