@@ -182,7 +182,7 @@ export const CompetitionLayout = () => {
   if (initializing) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-zinc-500">
-        <Loader2 className="w-10 h-10 animate-spin text-red-600" />
+        <Loader2 className="w-10 h-10 animate-spin text-[#d4af37]" />
         <p className="animate-pulse font-mono text-sm">Synchronizing Session...</p>
       </div>
     );
@@ -190,7 +190,7 @@ export const CompetitionLayout = () => {
 
   if (competitionStatus === 'frozen') {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black relative overflow-hidden p-6 font-sans z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-black overflow-hidden p-6 font-sans z-50">
          <div className="absolute inset-0 bg-orange-500/10 z-0 animate-pulse" />
          <div className="z-10 text-center max-w-lg w-full p-8 bg-zinc-900/90 backdrop-blur-xl border border-orange-500/50 rounded-2xl shadow-2xl shadow-orange-500/20">
             <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -224,10 +224,10 @@ export const CompetitionLayout = () => {
 
   if (competitionStatus === 'disqualified') {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black relative p-6 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-black p-6 z-50">
         <div className="text-center max-w-md">
-          <AlertTriangle className="w-20 h-20 text-red-600 mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-red-600 mb-4 font-display">DISQUALIFIED</h1>
+          <AlertTriangle className="w-20 h-20 text-[#d4af37] mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-[#d4af37] mb-4 font-wizard tracking-widest uppercase">DISQUALIFIED</h1>
           <p className="text-zinc-400">Your attempt has been terminated due to repeated violations.</p>
         </div>
       </div>

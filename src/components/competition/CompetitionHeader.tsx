@@ -7,6 +7,47 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+// --- ANIMATED TITLE COMPONENT ---
+const StrangerTypewriter = ({ text, className = "text-5xl md:text-7xl" }: { text: string, className?: string }) => {
+  const letters = text.split("");
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.5 }
+    }
+  };
+
+  const letterVariants = {
+    hidden: { opacity: 0, textShadow: "0 0 0px rgba(212,175,55,0)" },
+    visible: { 
+      opacity: 1,
+      textShadow: [
+        "0 0 10px rgba(212,175,55,0.8)", 
+        "0 0 20px rgba(212,175,55,0)", 
+        "0 0 10px rgba(212,175,55,0.8)"
+      ],
+      transition: { duration: 0.1, repeat: Infinity, repeatDelay: 5, repeatType: "reverse" as const }
+    }
+  };
+
+  return (
+    <motion.div 
+      className={`font-st font-black text-[#d4af37] tracking-wider relative z-10 ${className}`}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {letters.map((char, index) => (
+        <motion.span key={index} variants={letterVariants}>
+          {char}
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+};
+
 export const CompetitionHeader = () => {
   const navigate = useNavigate();
   const { email, userId } = useCompetitionStore();
@@ -76,11 +117,9 @@ export const CompetitionHeader = () => {
           <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#3d2618] to-[#8b6e2e] border-2 border-[#d4af37] flex items-center justify-center shadow-[0_0_20px_rgba(212,175,55,0.3)]">
             <Wand2 className="w-6 h-6 text-[#d4af37]" />
           </div>
-          <div>
-            <h1 className="font-wizard text-2xl md:text-3xl text-[#d4af37] tracking-widest leading-none">
-              TECH<span className="text-[#f2e0b5]">NETICS</span>
-            </h1>
-            <p className="text-[10px] text-[#f2e0b5]/60 font-crimson italic tracking-[0.2em] uppercase mt-1">
+          <div className="flex flex-col">
+            <StrangerTypewriter text="TECHNETICS" className="text-2xl md:text-3xl" />
+            <p className="text-[10px] text-[#f2e0b5]/60 font-crimson italic tracking-[0.2em] uppercase mt-0.5">
               Ministry of Coding & Wizardry
             </p>
           </div>

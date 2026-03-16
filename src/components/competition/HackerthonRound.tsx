@@ -91,19 +91,24 @@ const HackerthonRound = () => {
         },
         {
             id: 4,
-            domain: "Open Innovation",
-            title: "Open Innovation",
-            shortDesc: "Share any innovative idea with a proper explanation, technical approach, and implementation plan.",
-            background: "Innovation often comes from outside existing categories. This track is for visionaries who want to solve unique problems not covered by the other domains. It encourages absolute freedom of thought and creative problem-solving across any technological frontier.",
-            problemStatement: "User can share any idea they want but with proper explanation. Present your own unique problem statement and solution. Ensure it has a clear background, target audience, technical approach, and potential impact.",
+            domain: "Governance / Social Welfare",
+            title: "AI-Driven Adaptive Benefit Allocation Platform",
+            shortDesc: "Build a dynamic system that uses real-time data to identify and prioritize citizens for social welfare schemes based on shifting vulnerability metrics.",
+            background: "Traditional welfare distribution often relies on static census data that quickly becomes outdated. As economic conditions, climate events, or health crises occur, many eligible citizens fall through the cracks because manual updates are too slow. A more responsive system is needed to ensure that limited government resources reach those in the highest need at the right time.",
+            problemStatement: "Develop a platform that integrates multi-source data (income changes, disaster impact, health records) to create a 'Live Vulnerability Index.' The system should automate the matching of citizens to relevant government subsidies and provide a transparent tracking mechanism for fund disbursement.",
             directions: [
-                "Define a clear problem you've observed in the real world.",
-                "Outline a technical architecture for your solution.",
-                "Explain how it leverages modern technology.",
-                "Describe your implementation roadmap.",
-                "Justify the societal or market impact of your proposal."
-            ],
-            evaluation: ["Originality", "Technical Feasibility", "Potential Impact", "Clarity of Vision"]
+                "Dynamic Eligibility Engine: Use predictive modeling to flag households that may have recently fallen into a vulnerable category based on external economic triggers.",
+            "Automated Matching: Map citizen profiles against a library of local and federal schemes to suggest the most relevant aid automatically.",
+            "Transparency Dashboard: Create a portal where citizens can track the status of their applications and the overall distribution of funds in their district.",
+            "Fraud Detection: Implement anomaly detection to ensure aid is not being diverted or claimed by duplicate profiles."
+        ],
+        "evaluation": [
+            "Targeting Accuracy",
+            "Processing Speed",
+            "Transparency",
+            "Fraud Prevention",
+            "Data Privacy"
+        ]
         }
     ];
 
