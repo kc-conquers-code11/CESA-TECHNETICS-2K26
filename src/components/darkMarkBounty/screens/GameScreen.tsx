@@ -52,8 +52,9 @@ export const GameScreen: React.FC<Props> = ({ game, onComplete }) => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          if (!done) {
+          if (!done && !isCompleting) {
             setDone(true);
+            setIsCompleting(true);
             onComplete(false);
           }
           return 0;
@@ -65,17 +66,21 @@ export const GameScreen: React.FC<Props> = ({ game, onComplete }) => {
     return () => clearInterval(timer);
   }, [done, onComplete]);
 
+  const [isCompleting, setIsCompleting] = useState(false);
+
   const handleAnswer = (correct: boolean) => {
-    if (done) return;
+    if (done || isCompleting) return;
 
     if (correct) {
       setDone(true);
+      setIsCompleting(true);
       onComplete(true);
     } else {
       const newAttempts = attempts - 1;
       setAttempts(newAttempts);
       if (newAttempts <= 0) {
         setDone(true);
+        setIsCompleting(true);
         onComplete(false);
       }
     }
