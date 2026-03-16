@@ -7,6 +7,8 @@ export default {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "./index.html", 
+    "./src/**/*.{js,ts,jsx,tsx}"
   ],
   prefix: "",
   theme: {
@@ -95,6 +97,13 @@ export default {
         wizard: ["BlackChancery", "serif"],
       },
       keyframes: {
+        "fade-in": {
+          "0%": { opacity: "0" },
+        },
+        shine: {
+          "0%": { left: "-100%" },
+          "100%": { left: "100%" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
