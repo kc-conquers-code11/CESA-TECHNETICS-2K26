@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { loginApi } from '../lib/auth';
+import { loginApi } from '@/lib/auth';
 import { useCompetitionStore } from '@/store/competitionStore';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ const GamesPage = () => {
   // const DARK_MARK_START_TIME = new Date("2026-03-17T06:00:00+05:30").getTime();
   const DARK_MARK_START_TIME = new Date("2026-03-17T02:00:00+05:30").getTime();
   const [currentTime, setCurrentTime] = React.useState(Date.now());
-  
+
   const isDarkMarkLocked = React.useMemo(() => {
     return currentTime < DARK_MARK_START_TIME;
   }, [currentTime, DARK_MARK_START_TIME]);
@@ -60,7 +60,7 @@ const GamesPage = () => {
 
   const handleLogin = async (e: React.FormEvent, idx: number, title: string) => {
     e.preventDefault();
-    
+
     // Lock check for Dark Mark Bounty
     if (idx === 1 && isDarkMarkLocked) {
       toast.error("The Dark Mark is currently sealed until March 17th, 6 AM.");
@@ -369,12 +369,12 @@ const GamesPage = () => {
             <p className="font-crimson text-sm text-[#3d2618] text-center leading-tight">
               {currentPage === 1 && isDarkMarkLocked ? (
                 <>
-                  <span className="font-bold text-zinc-900 uppercase">Access Denied:</span><br /> 
+                  <span className="font-bold text-zinc-900 uppercase">Access Denied:</span><br />
                   It's not the time yet. The Mark remains dormant.
                 </>
               ) : (
                 <>
-                  <span className="font-bold text-red-900 uppercase">MANDATORY:</span><br /> 
+                  <span className="font-bold text-red-900 uppercase">MANDATORY:</span><br />
                   Complete each seal carefully. The Registry is absolute.
                 </>
               )}

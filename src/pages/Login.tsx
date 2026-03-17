@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loginApi } from "../lib/auth";
+import { loginApi } from "@/lib/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { useCompetitionStore } from "@/store/competitionStore"; // Store update karne ke liye
 
@@ -14,10 +14,10 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await loginApi({ email, password });
-      
+
       // Store Token
       localStorage.setItem("token", res.session?.access_token || "");
-      
+
       // Initialize Zustand Store (Important for Exam Flow)
       if (res.user) {
         await initializeUser(res.user.id, res.user.email || "");
