@@ -11,6 +11,7 @@ interface Props {
   onLogout: () => void;
   hasActiveGame: boolean;
   onResumeGame: () => void;
+  cooldownRemaining: number;
 }
 
 export const TeamDashboard: React.FC<Props> = ({
@@ -23,7 +24,9 @@ export const TeamDashboard: React.FC<Props> = ({
   onLogout,
   hasActiveGame,
   onResumeGame,
+  cooldownRemaining,
 }) => {
+  const isCoolingDown = cooldownRemaining > 0;
   return (
     <div className="screen team-screen">
       <div className="team-header">
@@ -44,11 +47,16 @@ export const TeamDashboard: React.FC<Props> = ({
             className="input code-input"
             placeholder="e.g. HARRY"
             value={codeInput}
+            disabled={isCoolingDown}
             onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && onSubmitCode()}
+            onKeyDown={(e) => e.key === "Enter" && !isCoolingDown && onSubmitCode()}
           />
-          <button className="btn btn-primary" onClick={onSubmitCode}>
-            🎯 Go
+          <button
+            className="btn btn-primary"
+            onClick={onSubmitCode}
+            disabled={isCoolingDown}
+          >
+            {isCoolingDown ? `⏳ Wait (${cooldownRemaining}s)` : "🎯 Go"}
           </button>
         </div>
         {codeError && <div className="error-msg">{codeError}</div>}

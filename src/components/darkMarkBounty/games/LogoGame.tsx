@@ -16,6 +16,7 @@ export const LogoGame: React.FC<Props> = ({ puzzle, difficulty, onAnswer }) => {
   const blurMap = { easy: 4, medium: 10, hard: 18 };
   const blur = blurMap[difficulty];
   const [revealed, setRevealed] = useState(false);
+  const [chosen, setChosen] = useState<string | null>(null);
 
   return (
     <div className="puzzle-box">
@@ -31,10 +32,19 @@ export const LogoGame: React.FC<Props> = ({ puzzle, difficulty, onAnswer }) => {
         {puzzle.options.map((opt) => (
           <button
             key={opt}
-            className="btn btn-option"
+            className={`btn btn-option ${chosen === opt ? (opt === puzzle.name ? "btn-correct" : "btn-wrong") : ""}`}
             onClick={() => {
+              if (chosen) return;
+              setChosen(opt);
               setRevealed(true);
-              setTimeout(() => onAnswer(opt === puzzle.name), 400);
+              setTimeout(() => {
+                const correct = opt === puzzle.name;
+                onAnswer(correct);
+                if (!correct) {
+                  setChosen(null);
+                  setRevealed(false);
+                }
+              }, 400);
             }}
           >
             {opt}

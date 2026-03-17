@@ -31,8 +31,16 @@ export const DarkMarkBounty: React.FC = () => {
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   const { notification, showNotification } = useNotification();
+
+  // Cooldown countdown after a failed attempt
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const timer = setTimeout(() => setCooldownRemaining((prev) => prev - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldownRemaining]);
 
   // Auto-initialize currentTeam from global CompetitionStore
   useEffect(() => {
@@ -202,6 +210,7 @@ export const DarkMarkBounty: React.FC = () => {
           .eq("code", activeGame.code)
           .eq("status", "active");
       }
+      setCooldownRemaining(5); // 5-second cooldown after a failed attempt
       setScreen("team");
       setActiveGame(null);
       return;
@@ -323,6 +332,7 @@ export const DarkMarkBounty: React.FC = () => {
             codeError={codeError}
             onSubmitCode={handleCodeSubmit}
             hasActiveGame={!!activeGame}
+            cooldownRemaining={cooldownRemaining}
             onResumeGame={() => {
               if (activeGame) setScreen("game");
             }}

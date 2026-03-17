@@ -15,7 +15,11 @@ export const TerminalGame: React.FC<Props> = ({ puzzle, onAnswer }) => {
 
   const pick = (opt: string) => {
     setChosen(opt);
-    setTimeout(() => onAnswer(opt === puzzle.answer), 400);
+    setTimeout(() => {
+      const correct = opt === puzzle.answer;
+      onAnswer(correct);
+      if (!correct) setChosen(null);
+    }, 400);
   };
 
   return (

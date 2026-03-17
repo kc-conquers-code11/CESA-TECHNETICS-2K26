@@ -35,7 +35,15 @@ export const SwapSortGame: React.FC<Props> = ({ puzzle, onAnswer }) => {
 
         if (isSorted(newArr)) {
           setDone(true);
-          setTimeout(() => onAnswer(newSwaps <= puzzle.minSwaps), 600);
+          setTimeout(() => {
+            const correct = newSwaps <= puzzle.minSwaps;
+            onAnswer(correct);
+            if (!correct) {
+              setDone(false);
+              setArr([...puzzle.arr]);
+              setSwaps(0);
+            }
+          }, 600);
         }
       } else {
         setSelected(null);

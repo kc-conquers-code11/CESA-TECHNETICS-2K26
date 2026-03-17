@@ -150,6 +150,16 @@
   letter-spacing: 1px;
 }
 
+.btn:disabled {
+  background: #333 !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-color: #444 !important;
+  opacity: 0.7;
+}
+
 .btn-primary {
   background: #ff4444;
   color: #fff;
@@ -272,6 +282,14 @@
 
 .input:focus {
   border-color: #ff4444;
+}
+
+.input:disabled {
+  background: #0d0d18;
+  border-color: #333;
+  color: #555;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .code-input {
