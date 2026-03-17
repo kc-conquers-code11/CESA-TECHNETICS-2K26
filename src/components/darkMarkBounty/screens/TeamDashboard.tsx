@@ -1,5 +1,6 @@
 import React from "react";
 import type { Team } from "@/types/darkMarkBounty";
+import { getTeamNameFromCode } from "@/components/data/darkMarkBounty/codeMapping";
 
 interface Props {
   team: Team;
@@ -68,7 +69,8 @@ export const TeamDashboard: React.FC<Props> = ({
           <div className="solved-list">
             {team.solved.map((s, i) => (
               <div key={i} className="solved-item">
-                <span className="solved-code">{s.code}</span>
+                {/* <span className="solved-code">{s.code}</span> */}
+                <span className="solved-code">{getTeamNameFromCode(s.code)}</span>
                 <span className="solved-game">{s.game}</span>
                 <span className="solved-pts">+{s.points}</span>
               </div>

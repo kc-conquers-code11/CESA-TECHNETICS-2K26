@@ -64,3 +64,9 @@ export const getInternalCode = (input: string): EnvelopeCode | null => {
 
     return null;
 };
+
+// Reverse mapping: DM code -> Team Name
+export const getTeamNameFromCode = (dmCode: string): string => {
+    const entry = Object.entries(CODE_MAPPING).find(([_, value]) => value === dmCode);
+    return entry ? entry[0].replace(/_/g, ' ') : dmCode;
+};

@@ -210,7 +210,7 @@ export const DarkMarkBounty: React.FC = () => {
           .eq("code", activeGame.code)
           .eq("status", "active");
       }
-      setCooldownRemaining(5); // 5-second cooldown after a failed attempt
+      setCooldownRemaining(60); // 60-second cooldown after a failed attempt
       setScreen("team");
       setActiveGame(null);
       return;

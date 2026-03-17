@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loginApi } from "../lib/auth";
+import { loginApi } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
 import { useCompetitionStore } from "@/store/competitionStore";
 import { toast } from "sonner";
@@ -16,17 +16,17 @@ export default function DarkMarkLogin() {
     setLoading(true);
     try {
       const res = await loginApi({ email, password });
-      
+
       // Store Token
       localStorage.setItem("token", res.session?.access_token || "");
-      
+
       // Initialize Zustand Store
       if (res.user) {
         await initializeUser(res.user.id, res.user.email || "");
-        
+
         // RE-FETCH to get is_dark_mark (already handled in initializeUser, but let's check state)
         const state = useCompetitionStore.getState();
-        
+
         if (!state.isDarkMark && !res.isAdmin) {
           toast.error("Access Denied: You are not registered for the Dark Mark Bounty.");
           setLoading(false);
@@ -51,7 +51,7 @@ export default function DarkMarkLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black text-white p-4">
       <div className="w-full max-w-[420px] p-8 rounded-2xl border border-red-900/50 bg-zinc-950 shadow-[0_0_50px_rgba(153,27,27,0.3)]">
-        
+
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mb-4 border border-red-500/30">
             <Shield className="w-8 h-8 text-red-600" />

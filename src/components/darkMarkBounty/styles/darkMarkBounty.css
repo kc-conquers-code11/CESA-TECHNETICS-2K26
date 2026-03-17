@@ -479,6 +479,10 @@
 /* GAME SCREEN */
 .game-screen {
   padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .game-header {
@@ -528,8 +532,13 @@
 
 .game-body {
   max-width: 640px;
+  width: 100%;
   margin: 0 auto;
   padding-bottom: 40px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  /* Important for flex child scrolling */
 }
 
 /* PUZZLE BOX */
